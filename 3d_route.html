@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>3Dプログラミングたんけん</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        /* --- Base Styles --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            overscroll-behavior: none;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #e0f2fe;
+        }
+        #titleScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(55, 65, 81, 0.9);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; color: white; text-align: center; padding: 2rem;
+        }
+        #titleScreen h1 { font-size: 2.5rem; font-weight: bold; margin-bottom: 1rem; color: #f3f4f6; }
+        #titleScreen p { font-size: 1.125rem; margin-bottom: 2rem; color: #d1d5db; }
+        .difficulty-button {
+            background-color: #3b82f6; color: white; font-weight: bold; padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem; margin: 0.5rem; cursor: pointer; transition: background-color 0.2s;
+            border: 2px solid transparent;
+        }
+        .difficulty-button:hover { background-color: #2563eb; }
+        .difficulty-button.selected { background-color: #1d4ed8; border-color: #93c5fd; }
+        #startButton {
+            background-color: #10b981; color: white; font-weight: bold; padding: 0.75rem 2rem;
+            border-radius: 0.5rem; margin-top: 1.5rem; cursor: pointer; transition: background-color 0.2s;
+            font-size: 1.125rem;
+        }
+        #startButton:hover { background-color: #059669; }
+
+        #mainContainer { display: none; flex-direction: column; flex-grow: 1; gap: 1rem; }
+        #view3dContainer { position: relative; background-color: #bfdbfe; border-radius: 0.5rem; overflow: hidden; min-height: 300px; flex-grow: 1; }
+        #view3dCanvas { display: block; width: 100%; height: 100%; }
+        #controlsContainer { background-color: white; border-radius: 0.5rem; padding: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+        @media (min-width: 768px) {
+            #mainContainer { flex-direction: row; }
+            #view3dContainer { width: 60%; }
+            #controlsContainer { width: 40%; max-height: calc(100vh - 120px); overflow-y: auto; }
+        }
+        .command-block { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        .command-block:active { cursor: grabbing; }
+        .sequence-area { min-height: 100px; border: 2px dashed #cbd5e1; background-color: #f1f5f9; border-radius: 0.5rem; padding: 0.75rem; space-y: 0.5rem; }
+        .drag-placeholder { background-color: #e0f2fe; border: 2px dashed #7dd3fc; opacity: 0.7; height: 40px; margin: 4px 0; border-radius: 0.25rem; }
+        .dragging { opacity: 0.5; transform: scale(1.05); }
+        .touch-clone { position: fixed; pointer-events: none; z-index: 1000; opacity: 0.8; transform: scale(1.05); font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: none; }
+        .message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1001; display: none; font-size: 1rem; }
+        .message-success { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .message-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .command-block-instance { cursor: default; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .command-block-instance span { cursor: pointer; }
+
+        .camera-controls-container { position: absolute; bottom: 1rem; display: flex; gap: 0.5rem; z-index: 10; }
+        #zoomControls { right: 1rem; flex-direction: column; }
+        #rotationControls { left: 1rem; flex-direction: row; }
+        #viewModeControls { left: 50%; transform: translateX(-50%); flex-direction: row; }
+        .camera-control-button {
+            background-color: rgba(0,0,0,0.5); color: white; border: none; border-radius: 0.375rem;
+            width: 2.5rem; height: 2.5rem; font-size: 1.25rem; font-weight: bold;
+            display: flex; justify-content: center; align-items: center; cursor: pointer; transition: background-color 0.2s;
+        }
+        .camera-control-button:hover { background-color: rgba(0,0,0,0.7); }
+        .camera-control-button:active { background-color: rgba(0,0,0,0.9); }
+        .camera-control-button.active-view { background-color: rgba(0,100,255,0.7); }
+
+        #screenOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: black; opacity: 0; pointer-events: none; z-index: 20; transition: opacity 0.3s ease-in-out; }
+        .shake { animation: screenShake 0.3s cubic-bezier(.36,.07,.19,.97) both; transform: translate3d(0,0,0); backface-visibility: hidden; perspective: 1000px; }
+        @keyframes screenShake {
+            10%, 90% { transform: translate3d(-2px, 0, 0) rotate(0.5deg); } 20%, 80% { transform: translate3d(3px, 0, 0) rotate(-0.5deg); }
+            30%, 50%, 70% { transform: translate3d(-5px, 0, 0) rotate(1deg); } 40%, 60% { transform: translate3d(5px, 0, 0) rotate(-1deg); }
+        }
+        #statsDisplay { margin-top: 1rem; padding: 0.5rem; background-color: #eef2ff; border-radius: 0.375rem; border: 1px solid #c7d2fe; }
+        #statsDisplay p { margin: 0.25rem 0; font-size: 0.875rem; color: #374151; }
+        #statsDisplay span { font-weight: 600; color: #1d4ed8; }
+    </style>
+</head>
+<body class="p-0 md:p-0">
+
+    <div id="titleScreen">
+        <h1>3Dプログラミングたんけん</h1>
+        <p>難易度を選んでスタート！</p>
+        <div>
+            <button id="difficultyEasy" class="difficulty-button selected" data-difficulty="easy">やさしい</button>
+            <button id="difficultyNormal" class="difficulty-button" data-difficulty="normal">ふつう</button>
+            <button id="difficultyHard" class="difficulty-button" data-difficulty="hard">むずかしい</button>
+        </div>
+        <button id="startButton">ゲームスタート</button>
+    </div>
+
+    <div id="mainContainer" class="p-4 md:p-6">
+        <div id="view3dContainer">
+            <canvas id="view3dCanvas"></canvas>
+            <div id="screenOverlay"></div>
+            <div id="zoomControls" class="camera-controls-container">
+                <button id="zoomInButton" class="camera-control-button">+</button>
+                <button id="zoomOutButton" class="camera-control-button">-</button>
+            </div>
+            <div id="rotationControls" class="camera-controls-container">
+                <button id="rotateLeftButton" class="camera-control-button">←</button>
+                <button id="rotateRightButton" class="camera-control-button">→</button>
+            </div>
+            <div id="viewModeControls" class="camera-controls-container">
+                <button id="topViewButton" class="camera-control-button">上</button>
+                <button id="perspectiveViewButton" class="camera-control-button active-view">斜</button>
+            </div>
+        </div>
+        <div id="controlsContainer">
+            <div class="flex flex-col h-full">
+                <div>
+                    <h2 class="text-lg font-semibold mb-3 text-gray-700">使えるめいれい</h2>
+                    <div id="commandPalette" class="flex flex-wrap gap-2 mb-4">
+                        <button data-command="forward" draggable="true" class="command-block bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow">まえにすすむ</button>
+                        <button data-command="turnLeft" draggable="true" class="command-block bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow">ひだりをむく</button>
+                        <button data-command="turnRight" draggable="true" class="command-block bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow">みぎをむく</button>
+                    </div>
+                </div>
+                <div class="flex-grow">
+                    <h2 class="text-lg font-semibold mb-3 text-gray-700">プログラム</h2>
+                    <div id="sequenceArea" class="sequence-area"></div>
+                </div>
+                <div class="mt-4 flex justify-center md:justify-start gap-3">
+                    <button id="runButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow flex items-center gap-2">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                        じっこう
+                    </button>
+                    <button id="resetButton" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg shadow flex items-center gap-2">
+                         <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
+                        やりなおす
+                    </button>
+                    <button id="titleButton" class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-6 rounded-lg shadow flex items-center gap-2">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" clip-rule="evenodd" /></svg>
+                        タイトルにもどる
+                    </button>
+                </div>
+                <div id="statsDisplay">
+                    <p>プログラム実行回数: <span id="programExecutionCountDisplay">0</span></p>
+                    <p>アクション実行回数: <span id="actionExecutionCountDisplay">0</span></p>
+                    <p>スコア: <span id="scoreDisplay">---</span></p>
+                </div>
+                 <p class="mt-2 text-xs text-gray-500 text-center md:text-left">
+                    青い箱がプレイヤーです。緑がスタート、黄色+旗がゴール、灰色がカベです。
+                 </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const CELL_WIDTH = 2;
+        const WALL_HEIGHT = 2.5;
+        const PLAYER_HEIGHT = 1.0;
+        const CAMERA_DEFAULT_DISTANCE = 7;
+        let currentCameraDistance = CAMERA_DEFAULT_DISTANCE;
+        const CAMERA_MIN_DISTANCE = 3;
+        const CAMERA_MAX_DISTANCE = 30;
+        const CAMERA_ZOOM_STEP = 3;
+        const CAMERA_HEIGHT_OFFSET = 4;
+        let cameraAzimuthAngle = 0;
+        const CAMERA_ROTATION_STEP = THREE.MathUtils.degToRad(45);
+        const COLLISION_BOUNCE_DISTANCE = 0.3;
+        const COLLISION_ANIMATION_DURATION = 150;
+        const CAMERA_LERP_FACTOR = 0.08;
+        const SCREEN_SHAKE_DURATION = 300;
+        const FADE_DURATION = 300;
+        const MAX_SCORE = 100;
+        const PROGRAM_RUN_PENALTY = 5;
+        const ACTION_PENALTY = 1;
+        const WALL_HIT_PENALTY = 2;
+        const MOVE_DELAY_MS = 500; // コマンド実行間の遅延時間（ミリ秒）
+
+        const MAP_DATA = {
+            easy: {
+                gridSize: 5, startPos: { x: 0, y: 0 }, startDir: -90,
+                goalPos: { x: 4, y: 4 },
+                walls: [ { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 } ]
+            },
+            normal: {
+                gridSize: 7, startPos: { x: 0, y: 3 }, startDir: -90,
+                goalPos: { x: 6, y: 3 },
+                walls: [
+                    { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 5 },
+                    { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 3, y: 2 }, { x: 3, y: 4 }, { x: 3, y: 5 }, { x: 3, y: 6 },
+                    { x: 5, y: 1 }, { x: 5, y: 2 }, { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 5 }
+                ]
+            },
+            hard: {
+                gridSize: 9, startPos: { x: 1, y: 1 }, startDir: 0,
+                goalPos: { x: 7, y: 7 },
+                walls: [
+                    { x: 0, y: 3 }, { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 3 },
+                    { x: 4, y: 1 }, { x: 4, y: 2 }, { x: 2, y: 1 }, { x: 2, y: 0 },
+                    { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 },
+                    { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 6, y: 6 },
+                    { x: 1, y: 7 }, { x: 3, y: 7 }, { x: 5, y: 7 }
+                ]
+            }
+        };
+        let currentMapData = MAP_DATA.easy;
+
+        // --- DOM Elements ---
+        const titleScreen = document.getElementById('titleScreen');
+        const difficultyButtons = [
+            document.getElementById('difficultyEasy'),
+            document.getElementById('difficultyNormal'),
+            document.getElementById('difficultyHard')
+        ];
+        const startButton = document.getElementById('startButton');
+        const mainContainer = document.getElementById('mainContainer');
+        const view3dContainer = document.getElementById('view3dContainer');
+        const canvas = document.getElementById('view3dCanvas');
+        const commandPalette = document.getElementById('commandPalette');
+        const sequenceArea = document.getElementById('sequenceArea');
+        const runButton = document.getElementById('runButton');
+        const resetButton = document.getElementById('resetButton');
+        // メッセージボックスの作成
+        const messageBox = document.createElement('div');
+        messageBox.className = 'message-box';
+        document.body.appendChild(messageBox);
+        const zoomInButton = document.getElementById('zoomInButton');
+        const zoomOutButton = document.getElementById('zoomOutButton');
+        const rotateLeftButton = document.getElementById('rotateLeftButton');
+        const rotateRightButton = document.getElementById('rotateRightButton');
+        const topViewButton = document.getElementById('topViewButton');
+        const perspectiveViewButton = document.getElementById('perspectiveViewButton');
+        const screenOverlay = document.getElementById('screenOverlay');
+        const programExecutionCountDisplay = document.getElementById('programExecutionCountDisplay');
+        const actionExecutionCountDisplay = document.getElementById('actionExecutionCountDisplay');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+
+        // --- 3D Scene Elements ---
+        let scene, camera, renderer, floor, ambientLight, directionalLight;
+        let playerGroup = null;
+        let playerBody = null;
+        let playerPosition = new THREE.Vector3();
+        let playerRotationY = 0;
+        const wallObjects = [];
+        let goalObjectGroup = null;
+        let isBouncing = false;
+        let cameraTargetPosition = new THREE.Vector3();
+        let cameraTargetLookAt = new THREE.Vector3();
+        let isTopViewActive = false;
+        let previousCameraState = { position: new THREE.Vector3(), lookAt: new THREE.Vector3(), azimuth: 0, distance: 0, zoom: 1 };
+        let topViewCameraY = 20;
+
+        // --- Game State ---
+        let isRunning = false;
+        let programExecutionCount = 0;
+        let totalActionCount = 0;
+        let gameScore = null;
+        let goalReachedThisSession = false;
+
+        // --- Drag and Drop State ---
+        let draggedItem = null, touchClone = null, placeholder = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+        let isDragging = false;
+
+        // --- Utility Functions ---
+        function gridToWorld(gridX, gridY) {
+            const offsetX = -(currentMapData.gridSize - 1) * CELL_WIDTH / 2;
+            const offsetZ = -(currentMapData.gridSize - 1) * CELL_WIDTH / 2;
+            return new THREE.Vector3(gridX * CELL_WIDTH + offsetX, 0, gridY * CELL_WIDTH + offsetZ);
+        }
+        function showMessage(message, type = 'success', duration = 3000) {
+            messageBox.textContent = message;
+            messageBox.className = `message-box message-${type}`;
+            messageBox.style.display = 'block';
+            setTimeout(() => { messageBox.style.display = 'none'; }, duration);
+        }
+        function updateStatsDisplay() {
+            programExecutionCountDisplay.textContent = programExecutionCount;
+            actionExecutionCountDisplay.textContent = totalActionCount;
+            scoreDisplay.textContent = gameScore === null ? "---" : gameScore;
+        }
+
+        function shakeScreen() {
+            view3dContainer.classList.add('shake');
+            setTimeout(() => { view3dContainer.classList.remove('shake'); }, SCREEN_SHAKE_DURATION);
+        }
+        async function fadeScreen(fadeIn = false, duration = FADE_DURATION) {
+            return new Promise(resolve => {
+                screenOverlay.style.transition = `opacity ${duration / 1000}s ease-in-out`;
+                screenOverlay.style.opacity = fadeIn ? '0' : '0.8';
+                setTimeout(resolve, duration);
+            });
+        }
+
+        // --- 3D Setup ---
+        function disposeMaterial(material) {
+            if (material) {
+                if (Array.isArray(material)) {
+                    material.forEach(mat => mat.dispose());
+                } else {
+                    material.dispose();
+                }
+            }
+        }
+        function disposeObject(obj) {
+            if (!obj) return;
+            if (obj.geometry) obj.geometry.dispose();
+            if (obj.material) disposeMaterial(obj.material);
+            if (obj.texture) obj.texture.dispose();
+            if (obj.children) {
+                for (let i = obj.children.length - 1; i >= 0; i--) {
+                    disposeObject(obj.children[i]);
+                }
+            }
+             if (obj.parent) obj.parent.remove(obj);
+        }
+
+        function cleanupScene() {
+            if (scene) {
+                while (scene.children.length > 0) {
+                    disposeObject(scene.children[0]);
+                    // scene.remove(scene.children[0]); // disposeObject handles removal
+                }
+            }
+            wallObjects.length = 0;
+            goalObjectGroup = null;
+            // Player group is not disposed here, it's reused.
+        }
+
+
+        function setupScene() {
+            if (scene) cleanupScene();
+            else scene = new THREE.Scene();
+
+            scene.background = new THREE.Color(0xbfdbfe);
+            scene.fog = new THREE.Fog(0xbfdbfe, CELL_WIDTH * currentMapData.gridSize * 0.8, CELL_WIDTH * currentMapData.gridSize * 2.5);
+
+            const aspect = view3dContainer.clientWidth / view3dContainer.clientHeight;
+            if (!camera) {
+                 camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 1000);
+            } else {
+                camera.aspect = aspect;
+                camera.fov = 55;
+                camera.near = 0.1;
+                camera.far = 1000;
+                camera.zoom = 1;
+                camera.updateProjectionMatrix();
+            }
+
+            if (!renderer) {
+                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.shadowMap.enabled = true;
+            }
+            renderer.setSize(view3dContainer.clientWidth, view3dContainer.clientHeight);
+
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            directionalLight = new THREE.DirectionalLight(0xffffff, 0.9);
+            directionalLight.position.set(currentMapData.gridSize, currentMapData.gridSize * 1.5, currentMapData.gridSize * 1.2);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
+            scene.add(directionalLight);
+
+            const floorSize = currentMapData.gridSize * CELL_WIDTH;
+            const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
+            const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x86efac });
+            floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.y = -0.05;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // プレイヤーモデルが存在しない場合、または再度ゲームスタートした場合に再作成
+            if (!playerGroup || !scene.children.includes(playerGroup)) {
+                if (playerGroup) {
+                    // 既存のプレイヤーモデルがあれば破棄
+                    disposeObject(playerGroup);
+                    playerGroup = null;
+                }
+                createPlayerModel();
+            }
+            scene.add(playerGroup);
+
+            create3DMap();
+            resetPlayerState();
+
+            if (!resizeListenerAttached) {
+                window.addEventListener('resize', onWindowResize, false);
+                resizeListenerAttached = true;
+            }
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            animate();
+        }
+
+        function createPlayerModel() {
+            playerGroup = new THREE.Group();
+            const bodyWidth = CELL_WIDTH * 0.4;
+            const bodyDepth = CELL_WIDTH * 0.3;
+            const playerBodyGeometry = new THREE.BoxGeometry(bodyWidth, PLAYER_HEIGHT * 0.8, bodyDepth);
+            const playerBodyMaterial = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+            playerBody = new THREE.Mesh(playerBodyGeometry, playerBodyMaterial);
+            playerBody.castShadow = true;
+            playerBody.position.y = PLAYER_HEIGHT * 0.1;
+            playerGroup.add(playerBody);
+
+            const eyeRadius = CELL_WIDTH * 0.05;
+            const eyeGeometry = new THREE.SphereGeometry(eyeRadius, 16, 8);
+            const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const pupilMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const pupilGeometry = new THREE.SphereGeometry(eyeRadius * 0.4, 12, 6);
+            const eyeL = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            eyeL.position.set(-bodyWidth * 0.25, PLAYER_HEIGHT * 0.2, -bodyDepth / 2 - 0.001);
+            const pupilL = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            pupilL.position.z = eyeRadius * 0.5;
+            eyeL.add(pupilL);
+            playerBody.add(eyeL);
+            const eyeR = new THREE.Mesh(eyeGeometry, eyeMaterial);
+            eyeR.position.set(bodyWidth * 0.25, PLAYER_HEIGHT * 0.2, -bodyDepth / 2 - 0.001);
+            const pupilR = new THREE.Mesh(pupilGeometry, pupilMaterial);
+            pupilR.position.z = eyeRadius * 0.5;
+            eyeR.add(pupilR);
+            playerBody.add(eyeR);
+
+            const limbColor = 0x60a5fa;
+            const armLength = PLAYER_HEIGHT * 0.5;
+            const limbRadius = bodyWidth * 0.15;
+            const armGeometry = new THREE.CylinderGeometry(limbRadius, limbRadius * 0.8, armLength, 8);
+            const armMaterial = new THREE.MeshStandardMaterial({ color: limbColor });
+            const armL = new THREE.Mesh(armGeometry, armMaterial);
+            armL.position.set(-bodyWidth / 2 - limbRadius, PLAYER_HEIGHT * 0.1, 0);
+            armL.rotation.z = THREE.MathUtils.degToRad(20);
+            playerBody.add(armL);
+            const armR = new THREE.Mesh(armGeometry, armMaterial);
+            armR.position.set(bodyWidth / 2 + limbRadius, PLAYER_HEIGHT * 0.1, 0);
+            armR.rotation.z = THREE.MathUtils.degToRad(-20);
+            playerBody.add(armR);
+
+            const legLength = PLAYER_HEIGHT * 0.55;
+            const legGeometry = new THREE.CylinderGeometry(limbRadius, limbRadius, legLength, 8);
+            const legL = new THREE.Mesh(legGeometry, armMaterial);
+            legL.position.set(-bodyWidth * 0.25, -PLAYER_HEIGHT * 0.3, 0);
+            playerBody.add(legL);
+            const legR = new THREE.Mesh(legGeometry, armMaterial);
+            legR.position.set(bodyWidth * 0.25, -PLAYER_HEIGHT * 0.3, 0);
+            playerBody.add(legR);
+        }
+
+        function create3DMap() {
+            const wallGeometry = new THREE.BoxGeometry(CELL_WIDTH, WALL_HEIGHT, CELL_WIDTH);
+            const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x6b7280 });
+            currentMapData.walls.forEach(wallPos => {
+                const worldPos = gridToWorld(wallPos.x, wallPos.y);
+                const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+                wallMesh.position.set(worldPos.x, WALL_HEIGHT / 2, worldPos.z);
+                wallMesh.castShadow = true; wallMesh.receiveShadow = true;
+                scene.add(wallMesh); wallObjects.push(wallMesh);
+            });
+
+            goalObjectGroup = new THREE.Group();
+            const goalBaseGeometry = new THREE.BoxGeometry(CELL_WIDTH * 0.8, 0.5, CELL_WIDTH * 0.8);
+            const goalBaseMaterial = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xccaa00 });
+            const goalBase = new THREE.Mesh(goalBaseGeometry, goalBaseMaterial);
+            goalBase.position.y = 0.25; goalBase.castShadow = true;
+            goalObjectGroup.add(goalBase);
+            const poleHeight = WALL_HEIGHT * 1.6;
+            const poleRadius = 0.05;
+            const poleGeometry = new THREE.CylinderGeometry(poleRadius, poleRadius, poleHeight, 8);
+            const poleMaterial = new THREE.MeshStandardMaterial({ color: 0x4b5563 });
+            const pole = new THREE.Mesh(poleGeometry, poleMaterial);
+            pole.position.y = goalBase.position.y + poleHeight / 2;
+            goalObjectGroup.add(pole);
+            const flagWidth = CELL_WIDTH * 0.5; const flagHeight = CELL_WIDTH * 0.3;
+            const flagGeometry = new THREE.PlaneGeometry(flagWidth, flagHeight);
+            const flagMaterial = new THREE.MeshStandardMaterial({ color: 0xef4444, side: THREE.DoubleSide });
+            const flag = new THREE.Mesh(flagGeometry, flagMaterial);
+            flag.position.set(flagWidth / 2, pole.position.y + poleHeight / 2 - flagHeight / 2, 0);
+            goalObjectGroup.add(flag);
+            const goalPos = gridToWorld(currentMapData.goalPos.x, currentMapData.goalPos.y);
+            goalObjectGroup.position.set(goalPos.x, 0, goalPos.z);
+            scene.add(goalObjectGroup);
+
+            const startGeometry = new THREE.CylinderGeometry(CELL_WIDTH * 0.3, CELL_WIDTH * 0.3, 0.2, 16);
+            const startMaterial = new THREE.MeshStandardMaterial({ color: 0x22c55e });
+            const startPos = gridToWorld(currentMapData.startPos.x, currentMapData.startPos.y);
+            const startMesh = new THREE.Mesh(startGeometry, startMaterial);
+            startMesh.name = "startIndicator";
+            startMesh.position.set(startPos.x, 0.1, startPos.z); scene.add(startMesh);
+        }
+
+        function resetPlayerState(isFullReset = true) {
+            const startWorldPos = gridToWorld(currentMapData.startPos.x, currentMapData.startPos.y);
+            // プレイヤーの高さを明示的に設定
+            playerPosition.set(startWorldPos.x, PLAYER_HEIGHT / 2, startWorldPos.z);
+            playerRotationY = THREE.MathUtils.degToRad(currentMapData.startDir);
+            if (playerGroup) {
+                playerGroup.position.copy(playerPosition);
+                playerGroup.rotation.y = playerRotationY;
+            }
+            cameraAzimuthAngle = 0;
+            isTopViewActive = false;
+            currentCameraDistance = CAMERA_DEFAULT_DISTANCE;
+            updateViewModeButtons();
+            updateCameraTarget();
+            if (camera) { // Ensure camera exists before using it
+                camera.position.copy(cameraTargetPosition);
+                camera.lookAt(cameraTargetLookAt);
+            }
+
+            if (isFullReset) {
+                programExecutionCount = 0;
+                totalActionCount = 0;
+                gameScore = null;
+                goalReachedThisSession = false;
+                updateStatsDisplay();
+            }
+        }
+
+        function updateCameraTarget() {
+            if (!playerGroup || !camera) return;
+            if (isTopViewActive) {
+                const mapExtent = currentMapData.gridSize * CELL_WIDTH;
+                // Adjust Y for top view based on map size and zoom
+                // The idea is to fit the map within the view.
+                // A simple approach: base height on diagonal, then adjust by zoom.
+                const baseHeight = mapExtent * 1.2; // A bit more than diagonal to have some margin
+                topViewCameraY = Math.max(CAMERA_MIN_DISTANCE * 3, baseHeight * (1 / camera.zoom) ); // Zoom affects height
+                topViewCameraY = Math.min(topViewCameraY, CAMERA_MAX_DISTANCE * 2.5); // Cap max Y
+
+                cameraTargetPosition.set(0, topViewCameraY, 0.1); // Slightly off-center Z for up vector
+                cameraTargetLookAt.set(0, 0, 0);
+                cameraTargetPosition.applyAxisAngle(new THREE.Vector3(0,1,0), cameraAzimuthAngle);
+            } else {
+                const baseOffset = new THREE.Vector3(0, CAMERA_HEIGHT_OFFSET, currentCameraDistance);
+                const playerRotatedOffset = baseOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), playerGroup.rotation.y);
+                const finalOffset = playerRotatedOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraAzimuthAngle);
+                cameraTargetPosition.copy(playerGroup.position).add(finalOffset);
+                cameraTargetLookAt.copy(playerGroup.position);
+            }
+        }
+
+        let animationFrameId = null;
+        let resizeListenerAttached = false;
+        function animate() {
+            animationFrameId = requestAnimationFrame(animate);
+            if (camera && renderer && scene) { // Ensure all are initialized
+                camera.position.lerp(cameraTargetPosition, CAMERA_LERP_FACTOR);
+                const currentLookAt = new THREE.Vector3();
+                camera.getWorldDirection(currentLookAt).multiplyScalar(10).add(camera.position);
+                const finalLookAt = new THREE.Vector3().lerpVectors(currentLookAt, cameraTargetLookAt, CAMERA_LERP_FACTOR * 1.5);
+                camera.lookAt(finalLookAt);
+                renderer.render(scene, camera);
+            }
+        }
+
+        function onWindowResize() {
+            if (!renderer || !camera) return;
+            const width = view3dContainer.clientWidth;
+            const height = view3dContainer.clientHeight;
+            if (width === 0 || height === 0) return; // Avoid issues if container is hidden/zero-sized
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // --- Game Logic ---
+        function resetGame() {
+            if (isRunning) return;
+            resetPlayerState(true);
+            isRunning = false;
+            runButton.disabled = false; resetButton.disabled = false;
+            runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            sequenceArea.querySelectorAll('.ring-2').forEach(el => el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500'));
+            // プログラムをクリア
+            sequenceArea.innerHTML = '';
+            showMessage("スタートにもどりました", 'success', 3000);
+        }
+
+        async function runCommands() {
+            if (isRunning) return;
+            isRunning = true;
+            programExecutionCount++;
+            updateStatsDisplay();
+            runButton.disabled = true; resetButton.disabled = true;
+            runButton.classList.add('opacity-50', 'cursor-not-allowed');
+            resetButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+            const commandElements = Array.from(sequenceArea.querySelectorAll('.command-block-instance'));
+            let currentActionInProgram = 0;
+
+            async function executeNextCommand() {
+                // Remove highlight from previous command before checking if done
+                if (currentActionInProgram > 0 && commandElements[currentActionInProgram - 1]) {
+                    commandElements[currentActionInProgram - 1]?.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+                }
+
+                if (currentActionInProgram >= commandElements.length) {
+                    // コマンドのハイライトをすべて削除
+                    sequenceArea.querySelectorAll('.ring-2').forEach(el => {
+                        el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+                    });
+                    
+                    isRunning = false;
+                    runButton.disabled = false; resetButton.disabled = false;
+                    runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    
+                    // ゴール判定（非同期関数なので await で待つ）
+                    await checkWinCondition();
+                    return;
+                }
+
+                const element = commandElements[currentActionInProgram];
+                const command = element.dataset.command;
+                element.classList.add('ring-2', 'ring-offset-2', 'ring-red-500');
+                totalActionCount++; updateStatsDisplay();
+                let actionSuccessful = true; let fellIntoAbyss = false;
+
+                switch (command) {
+                    case 'forward':
+                        const moveResult = await moveForward3D();
+                        actionSuccessful = moveResult.success;
+                        fellIntoAbyss = moveResult.fell;
+                        break;
+                    case 'turnLeft': turnLeft3D(); break;
+                    case 'turnRight': turnRight3D(); break;
+                }
+                updateCameraTarget();
+
+                if (fellIntoAbyss) {
+                    showMessage("奈落におちてしまった！", 'error', 4000);
+                    const fallTargetY = playerGroup.position.y - CELL_WIDTH * 1.5; // Fall further
+                    const fallDuration = FADE_DURATION * 1.2;
+                    const startTime = performance.now();
+                    function fallAnim() {
+                        const elapsedTime = performance.now() - startTime;
+                        const progress = Math.min(elapsedTime / fallDuration, 1);
+                        playerGroup.position.y = THREE.MathUtils.lerp(playerGroup.position.y, fallTargetY, progress * progress); // Ease in fall
+                        if (progress < 1) requestAnimationFrame(fallAnim);
+                    }
+                    requestAnimationFrame(fallAnim);
+                    await fadeScreen(false, fallDuration);
+ //                   resetPlayerState(false); updateCameraTarget();
+                    await fadeScreen(true, FADE_DURATION);
+                    
+                    // コマンドのハイライトをすべて削除
+                    sequenceArea.querySelectorAll('.ring-2').forEach(el => {
+                        el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+                    });
+                    
+                    // 実行状態をリセット
+                    isRunning = false;
+                    runButton.disabled = false; resetButton.disabled = false;
+                    runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    resetPlayerState(false); updateCameraTarget();
+                    // メッセージを表示
+                    setTimeout(() => {
+                        showMessage("奈落におちてしまった！スタート位置に戻りました", 'error', 4000);
+                    }, 100);
+                    return;
+                }
+
+                if (!actionSuccessful && command === 'forward') { // Wall hit
+                    showMessage("カベにぶつかった！", 'error');
+                    shakeScreen();
+                    if (!goalReachedThisSession) {
+                        gameScore = Math.max(0, (gameScore === null ? MAX_SCORE : gameScore) - WALL_HIT_PENALTY - ACTION_PENALTY);
+                        updateStatsDisplay();
+                    }
+                    
+                    // プレイヤーをスタート位置に戻す
+                    resetPlayerState(false); updateCameraTarget();
+                    
+                    // コマンドのハイライトをすべて削除
+                    sequenceArea.querySelectorAll('.ring-2').forEach(el => {
+                        el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+                    });
+                    
+                    // 実行状態をリセット
+                    isRunning = false;
+                    runButton.disabled = false; resetButton.disabled = false;
+                    runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                    
+                    // メッセージを表示
+                    setTimeout(() => {
+                        showMessage("カベにぶつかった！スタート位置に戻りました", 'error', 4000);
+                    }, 100);
+                    return;
+                }
+                currentActionInProgram++;
+                if (actionSuccessful || command !== 'forward') { await new Promise(resolve => setTimeout(resolve, MOVE_DELAY_MS)); }
+                // 再帰呼び出しを setTimeout でラップして、スタックオーバーフローを防止
+                setTimeout(() => executeNextCommand(), 0);
+            }
+            function finishExecution(clearSequence = false) {
+                // コマンドのハイライトをすべて削除
+                sequenceArea.querySelectorAll('.ring-2').forEach(el => {
+                    el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
+                });
+                
+                isRunning = false;
+                runButton.disabled = false; resetButton.disabled = false;
+                runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                // プログラムをクリアするかどうかのフラグ
+                if (clearSequence) {
+                    sequenceArea.innerHTML = '';
+                }
+            }
+            executeNextCommand();
+        }
+
+        async function moveForward3D() {
+            if (!playerGroup || isBouncing) return { success: false, fell: false };
+            const moveDirection = new THREE.Vector3(0, 0, -1);
+            moveDirection.applyAxisAngle(new THREE.Vector3(0, 1, 0), playerGroup.rotation.y);
+            moveDirection.normalize();
+            const nextPosition = playerGroup.position.clone().addScaledVector(moveDirection, CELL_WIDTH);
+            let collisionWithWall = false;
+
+            const playerBodyBox = new THREE.Box3().setFromObject(playerBody);
+            const nextWorldPlayerBodyBox = playerBodyBox.clone().translate(nextPosition.clone().sub(playerGroup.position));
+
+            for (const wall of wallObjects) {
+                const wallBox = new THREE.Box3().setFromObject(wall);
+                if (nextWorldPlayerBodyBox.intersectsBox(wallBox)) {
+                    collisionWithWall = true; break;
+                }
+            }
+
+            const halfFloorSize = (currentMapData.gridSize * CELL_WIDTH) / 2 - (CELL_WIDTH * 0.1);
+            if (Math.abs(nextPosition.x) > halfFloorSize || Math.abs(nextPosition.z) > halfFloorSize) {
+                 return { success: false, fell: true };
+            }
+
+            if (collisionWithWall) {
+                isBouncing = true;
+                const originalPos = playerGroup.position.clone();
+                const bounceDir = moveDirection.clone().negate();
+                const originalColor = playerBody.material.color.getHex();
+                playerBody.material.color.setHex(0xff0000);
+
+                const startTime = performance.now();
+                return new Promise(resolve => {
+                    function bounceStep(currentTime) {
+                        const elapsedTime = currentTime - startTime;
+                        let progress = Math.min(elapsedTime / COLLISION_ANIMATION_DURATION, 1);
+                        const bounceProgress = Math.sin(progress * Math.PI / 2);
+                        playerGroup.position.copy(originalPos).addScaledVector(bounceDir, COLLISION_BOUNCE_DISTANCE * bounceProgress);
+                        updateCameraTarget();
+                        if (progress < 1) { requestAnimationFrame(bounceStep); }
+                        else {
+                            const returnStartTime = performance.now();
+                            function returnStep(returnCurrentTime) {
+                                const returnElapsedTime = returnCurrentTime - returnStartTime;
+                                progress = Math.min(returnElapsedTime / (COLLISION_ANIMATION_DURATION / 2) , 1);
+                                playerGroup.position.lerpVectors(playerGroup.position, originalPos, progress * 0.5 + 0.5);
+                                updateCameraTarget();
+                                if (progress < 1) { requestAnimationFrame(returnStep); }
+                                else {
+                                    playerGroup.position.copy(originalPos); updateCameraTarget();
+                                    playerBody.material.color.setHex(originalColor);
+                                    isBouncing = false; resolve({ success: false, fell: false });
+                                }
+                            }
+                            requestAnimationFrame(returnStep);
+                        }
+                    }
+                    requestAnimationFrame(bounceStep);
+                });
+            }
+            playerGroup.position.copy(nextPosition);
+            playerPosition.copy(nextPosition);
+            return { success: true, fell: false };
+        }
+
+        function turnLeft3D() { if (!playerGroup || isBouncing) return; playerRotationY += Math.PI / 2; playerGroup.rotation.y = playerRotationY; }
+        function turnRight3D() { if (!playerGroup || isBouncing) return; playerRotationY -= Math.PI / 2; playerGroup.rotation.y = playerRotationY; }
+
+        async function checkWinCondition() {
+            if (!goalObjectGroup || !playerGroup) return false;
+            const goalPos = goalObjectGroup.position;
+            const distanceToGoal = playerGroup.position.distanceTo(new THREE.Vector3(goalPos.x, playerGroup.position.y, goalPos.z));
+            if (distanceToGoal < CELL_WIDTH * 0.6) {
+                if (!goalReachedThisSession) {
+                    goalReachedThisSession = true;
+                    gameScore = Math.max(0, MAX_SCORE - (programExecutionCount * PROGRAM_RUN_PENALTY) - (totalActionCount * ACTION_PENALTY));
+                    updateStatsDisplay();
+                }
+                
+                // ゴールメッセージを表示
+                showMessage(`ゴールしました！スコアは${gameScore}点です 🎉`, 'success', 5000);
+                
+                // ゴールしたら5秒待ってからタイトル画面に戻る
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                
+                // タイトル画面を表示
+                titleScreen.style.display = 'flex';
+                mainContainer.style.display = 'none';
+                
+                // ゲームをリセット
+                resetPlayerState(true);
+                sequenceArea.innerHTML = '';
+                
+                return true;
+            }
+            return false;
+        }
+
+        // --- Camera Controls Event Listeners ---
+        function updateViewModeButtons() {
+            if (isTopViewActive) {
+                topViewButton.classList.add('active-view');
+                perspectiveViewButton.classList.remove('active-view');
+                // Camera zoom for top view is effectively changing Y position
+                // Camera rotation for top view is rotating around map center (azimuth)
+            } else {
+                topViewButton.classList.remove('active-view');
+                perspectiveViewButton.classList.add('active-view');
+            }
+             // Enable all buttons regardless of view mode, their behavior changes
+            zoomInButton.disabled = false; zoomOutButton.disabled = false;
+            rotateLeftButton.disabled = false; rotateRightButton.disabled = false;
+        }
+
+        zoomInButton.addEventListener('click', () => {
+            if (isTopViewActive) {
+                 topViewCameraY = Math.max(CAMERA_MIN_DISTANCE * 2, topViewCameraY - CAMERA_ZOOM_STEP * 2);
+            } else {
+                currentCameraDistance = Math.max(CAMERA_MIN_DISTANCE, currentCameraDistance - CAMERA_ZOOM_STEP);
+            }
+            updateCameraTarget();
+        });
+        zoomOutButton.addEventListener('click', () => {
+            if (isTopViewActive) {
+                topViewCameraY = Math.min(CAMERA_MAX_DISTANCE * 2.5, topViewCameraY + CAMERA_ZOOM_STEP * 2); // Increased max Y for top view zoom out
+            } else {
+                currentCameraDistance = Math.min(CAMERA_MAX_DISTANCE, currentCameraDistance + CAMERA_ZOOM_STEP);
+            }
+            updateCameraTarget();
+        });
+        rotateLeftButton.addEventListener('click', () => {
+            cameraAzimuthAngle -= CAMERA_ROTATION_STEP;
+            updateCameraTarget();
+        });
+        rotateRightButton.addEventListener('click', () => {
+            cameraAzimuthAngle += CAMERA_ROTATION_STEP;
+            updateCameraTarget();
+        });
+        topViewButton.addEventListener('click', () => {
+            if (!isTopViewActive) {
+                isTopViewActive = true;
+                previousCameraState.position.copy(camera.position);
+                previousCameraState.lookAt.copy(cameraTargetLookAt);
+                previousCameraState.azimuth = cameraAzimuthAngle;
+                previousCameraState.distance = currentCameraDistance;
+                // cameraAzimuthAngle = 0; // Keep current azimuth for rotation around map center
+                topViewCameraY = currentMapData.gridSize * CELL_WIDTH * 1.5; // Initial reasonable height
+                updateCameraTarget();
+                updateViewModeButtons();
+            }
+        });
+        perspectiveViewButton.addEventListener('click', () => {
+            if (isTopViewActive) {
+                isTopViewActive = false;
+                cameraAzimuthAngle = previousCameraState.azimuth;
+                currentCameraDistance = previousCameraState.distance;
+                updateCameraTarget();
+                updateViewModeButtons();
+            }
+        });
+
+        // --- Drag and Drop Logic ---
+        function handleDragStart(e) {
+            const targetBlock = e.target.closest('.command-block');
+            if (!targetBlock || targetBlock.closest('.command-block-instance')) return;
+            isDragging = true; draggedItem = targetBlock;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedItem.dataset.command);
+            setTimeout(() => draggedItem.classList.add('dragging'), 0);
+            createPlaceholder();
+        }
+        function handleTouchStart(e) {
+            const targetBlock = e.target.closest('.command-block');
+            if (!targetBlock || targetBlock.closest('.command-block-instance')) return;
+            isDragging = true; draggedItem = targetBlock;
+            const touch = e.changedTouches[0]; const rect = draggedItem.getBoundingClientRect();
+            touchClone = draggedItem.cloneNode(true);
+            touchClone.className = draggedItem.className + ' touch-clone';
+            touchClone.style.width = `${rect.width}px`; touchClone.style.height = `${rect.height}px`;
+            dragOffsetX = touch.clientX - rect.left; dragOffsetY = touch.clientY - rect.top;
+            touchClone.style.left = `${touch.clientX - dragOffsetX}px`;
+            touchClone.style.top = `${touch.clientY - dragOffsetY}px`;
+            document.body.appendChild(touchClone); createPlaceholder();
+            if (e.cancelable) e.preventDefault();
+        }
+        function handleDragEnd(e) { if (!isDragging) return; isDragging = false; setTimeout(() => { draggedItem?.classList.remove('dragging'); draggedItem = null; }, 0); placeholder?.remove(); placeholder = null; }
+        function handleTouchEnd(e) {
+            if (!isDragging || !draggedItem) return;
+            const touch = e.changedTouches[0];
+            const dropTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (dropTargetElement && (dropTargetElement === sequenceArea || sequenceArea.contains(dropTargetElement))) {
+                const command = draggedItem.dataset.command; addBlockToSequence(command, touch.clientY);
+            }
+            isDragging = false; touchClone?.remove(); placeholder?.remove();
+            touchClone = null; placeholder = null; draggedItem = null;
+        }
+        function handleDragOver(e) { e.preventDefault(); if (!isDragging) return; e.dataTransfer.dropEffect = 'move'; const sequenceRect = sequenceArea.getBoundingClientRect(); if (e.clientX >= sequenceRect.left && e.clientX <= sequenceRect.right && e.clientY >= sequenceRect.top && e.clientY <= sequenceRect.bottom) { updatePlaceholderPosition(e.clientY); } else { placeholder?.remove(); } }
+        function handleTouchMove(e) {
+            if (!isDragging || !touchClone) return;
+            if (e.cancelable) e.preventDefault();
+            const touch = e.changedTouches[0];
+            touchClone.style.left = `${touch.clientX - dragOffsetX}px`;
+            touchClone.style.top = `${touch.clientY - dragOffsetY}px`;
+            const dropTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (dropTargetElement && (dropTargetElement === sequenceArea || sequenceArea.contains(dropTargetElement))) {
+                updatePlaceholderPosition(touch.clientY);
+            } else {
+                placeholder?.remove();
+            }
+        }
+        function handleDragLeave(e) { if (!sequenceArea.contains(e.relatedTarget) && placeholder) { placeholder.remove(); } }
+        function handleDrop(e) { e.preventDefault(); if (!isDragging) return; const sequenceRect = sequenceArea.getBoundingClientRect(); if (e.clientX >= sequenceRect.left && e.clientX <= sequenceRect.right && e.clientY >= sequenceRect.top && e.clientY <= sequenceRect.bottom) { const command = e.dataTransfer.getData('text/plain'); addBlockToSequence(command, e.clientY); } }
+        function createPlaceholder() { if (!placeholder) { placeholder = document.createElement('div'); placeholder.classList.add('drag-placeholder'); } return placeholder; }
+        function getDropTarget(yCoord) { const sequenceRect = sequenceArea.getBoundingClientRect(); const relativeY = yCoord - sequenceRect.top; let closest = { element: null, offset: Number.POSITIVE_INFINITY }; sequenceArea.querySelectorAll('.command-block-instance').forEach(block => { const blockRect = block.getBoundingClientRect(); const blockCenterY = blockRect.top + blockRect.height / 2 - sequenceRect.top; const offset = Math.abs(relativeY - blockCenterY); if (offset < closest.offset) { closest = { element: block, offset: offset, isAfter: relativeY > blockCenterY }; } }); if (closest.element === null || closest.offset > 50) { return { target: null, insertBefore: relativeY <= sequenceArea.clientHeight / 2 }; } return { target: closest.element, insertBefore: !closest.isAfter }; }
+        function updatePlaceholderPosition(yCoord) { createPlaceholder(); const { target, insertBefore } = getDropTarget(yCoord); if (target) { sequenceArea.insertBefore(placeholder, insertBefore ? target : target.nextSibling); } else { sequenceArea.insertBefore(placeholder, insertBefore ? sequenceArea.firstChild : null); } placeholder.style.display = 'block'; }
+        function addBlockToSequence(command, yCoord) { if (!command) return; const blockInstance = document.createElement('button'); blockInstance.dataset.command = command; const originalBlock = commandPalette.querySelector(`[data-command="${command}"]`); if (originalBlock) { blockInstance.className = originalBlock.className; blockInstance.innerHTML = originalBlock.innerHTML; blockInstance.classList.remove('command-block', 'hover:bg-blue-600', 'hover:bg-green-600', 'hover:bg-yellow-600'); blockInstance.classList.add('command-block-instance'); blockInstance.draggable = false; const removeBtn = document.createElement('span'); removeBtn.innerHTML = '&times;'; removeBtn.classList.add('text-lg', 'text-white', 'font-bold', 'ml-2', 'opacity-60', 'hover:opacity-100', 'cursor-pointer', 'px-1'); removeBtn.onclick = (e) => { e.stopPropagation(); blockInstance.remove(); }; blockInstance.appendChild(removeBtn); } else { blockInstance.textContent = command; blockInstance.classList.add('command-block-instance', 'bg-gray-400', 'text-white', 'p-2', 'rounded', 'mb-2'); } const { target, insertBefore } = getDropTarget(yCoord); if (target) { sequenceArea.insertBefore(blockInstance, insertBefore ? target : target.nextSibling); } else { sequenceArea.insertBefore(blockInstance, insertBefore ? sequenceArea.firstChild : null); } }
+
+        // --- Event Listeners ---
+        runButton.addEventListener('click', runCommands);
+        resetButton.addEventListener('click', resetGame);
+        const titleButton = document.getElementById('titleButton');
+        titleButton.addEventListener('click', () => {
+            if (isRunning) return; // 実行中は操作できないようにする
+            
+            // タイトル画面を表示
+            titleScreen.style.display = 'flex';
+            mainContainer.style.display = 'none';
+            
+            // ゲームをリセット
+            resetPlayerState(true);
+            sequenceArea.innerHTML = '';
+            
+            showMessage("タイトル画面に戻りました", 'success', 3000);
+        });
+        commandPalette.addEventListener('dragstart', handleDragStart);
+        document.addEventListener('dragend', handleDragEnd);
+        sequenceArea.addEventListener('dragover', handleDragOver);
+        sequenceArea.addEventListener('dragleave', handleDragLeave);
+        sequenceArea.addEventListener('drop', handleDrop);
+        commandPalette.addEventListener('touchstart', handleTouchStart, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd);
+        document.addEventListener('touchcancel', handleTouchEnd);
+
+        // Title Screen Logic
+        let selectedDifficulty = 'easy';
+        difficultyButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                difficultyButtons.forEach(btn => btn.classList.remove('selected'));
+                button.classList.add('selected');
+                selectedDifficulty = button.dataset.difficulty;
+            });
+        });
+
+        startButton.addEventListener('click', () => {
+            currentMapData = MAP_DATA[selectedDifficulty];
+            titleScreen.style.display = 'none';
+            mainContainer.style.display = 'flex';
+
+            // Delay setupScene slightly to ensure mainContainer is visible and has dimensions
+            requestAnimationFrame(() => {
+                if (view3dContainer.clientWidth > 0 && view3dContainer.clientHeight > 0) {
+                    if (!renderer) { // First time initialization
+                        setupScene();
+                    } else { // Re-initialize for new difficulty
+                        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                        setupScene();
+                    }
+                    updateStatsDisplay();
+                } else {
+                    // Fallback if dimensions are still not ready (should be rare)
+                    setTimeout(() => {
+                        if (!renderer) setupScene(); else {
+                            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                            setupScene();
+                        }
+                        updateStatsDisplay();
+                    }, 100);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
