@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ジグソーパズル</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* カスタムスタイル */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .piece {
+            touch-action: none; /* モバイルでのドラッグ操作の干渉を防ぐ */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease-out, box-shadow 0.1s ease-out;
+            cursor: grab;
+            transform-origin: center center;
+            /* CSS変数を介して回転を適用 */
+            transform: rotate(var(--rotation, 0deg));
+            user-select: none; /* テキスト選択を防止 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        .piece:active, .piece.dragging {
+            cursor: grabbing;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+            /* ドラッグ中もスケールと回転を維持 */
+            transform: scale(1.05) rotate(var(--rotation, 0deg));
+            z-index: 1000;
+        }
+        .piece.dragging {
+            opacity: 0.7;
+        }
+        .slot {
+            transition: background-color 0.2s ease;
+        }
+        .slot.drag-over {
+            background-color: #e0e7ff; /* Tailwind indigo-100 */
+        }
+        #board-container {
+            display: grid;
+            background-color: #d1d5db; /* Tailwind gray-300 */
+        }
+        #pieces-container {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            align-content: flex-start; 
+        }
+        .difficulty-button {
+            transition: all 0.15s ease-in-out;
+        }
+        .difficulty-button.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            font-weight: bold;
+        }
+        #image-upload-label {
+            cursor: pointer;
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #34D399; 
+            color: white;
+            border-radius: 0.375rem; 
+            transition: background-color 0.15s ease-in-out;
+            text-align: center;
+        }
+        #image-upload-label:hover {
+            background-color: #10B981; 
+        }
+        #image-upload {
+            display: none; 
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4 max-w-6xl"> 
+        <h1 class="text-3xl font-bold text-center mb-6 text-indigo-700">ジグソーパズル</h1>
+
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="lg:w-3/12 space-y-4">
+                <div id="controls" class="bg-white p-4 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-3 text-gray-700 text-center">設定</h2>
+                    <div class="mb-4">
+                        <label for="image-upload" id="image-upload-label" class="w-full">画像をアップロード</label>
+                        <input type="file" id="image-upload" accept="image/*">
+                        <p class="text-xs text-gray-500 mt-1 text-center">ヒント: 正方形に近い画像がおすすめです。</p>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2 text-gray-600 text-center">難易度</h3>
+                    <div class="grid grid-cols-2 gap-2 mb-2">
+                        <button id="btn-very-easy" data-difficulty="2" class="difficulty-button bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-3 rounded-md text-sm sm:text-base">とてもやさしい</button>
+                        <button id="btn-easy" data-difficulty="3" class="difficulty-button bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-3 rounded-md text-sm sm:text-base">やさしい</button>
+                        <button id="btn-medium" data-difficulty="4" class="difficulty-button bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-3 rounded-md text-sm sm:text-base">ふつう</button>
+                        <button id="btn-hard" data-difficulty="5" class="difficulty-button bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2 px-3 rounded-md text-sm sm:text-base">むずかしい</button>
+                    </div>
+                    <p class="text-sm text-gray-700 mt-2 mb-4 text-center">ピースは右クリックかダブルタップで回転できます。</p>
+                    <button id="start-button" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-150 ease-in-out shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+                        新しいパズルを開始
+                    </button>
+                    <div id="message" class="mt-3 text-center font-medium text-green-600 h-6"></div>
+                </div>
+
+                <div class="bg-white p-3 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-2 text-gray-700 text-center">完成図</h2>
+                    <img id="image-preview" src="" alt="[パズル画像の見本]" class="w-full h-auto rounded-md border-2 border-gray-200">
+                </div>
+            </div>
+
+            <div class="lg:w-4/12 flex justify-center items-start">
+                <div id="board-container" class="p-0.5 rounded-lg shadow-xl inline-grid gap-0">
+                    {/* Puzzle board slots will be appended here by JavaScript */}
+                </div>
+            </div>
+
+            <div class="lg:w-5/12 flex flex-col">
+                 <div class="bg-white p-4 rounded-xl shadow-lg flex flex-col flex-grow">
+                    <h2 class="text-xl font-semibold mb-2 text-gray-700 text-center">ピース置き場</h2>
+                    <div id="pieces-container" class="min-h-[200px] gap-1 p-1 border border-gray-300 rounded-md bg-gray-50 flex-grow overflow-y-auto">
+                        {/* Puzzle pieces will be appended here by JavaScript */}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables ---
+        let draggedElement = null;
+        const PUZZLE_DIMENSION = 360; 
+        let currentGridSize = 2; // Default difficulty set to "とてもやさしい"
+        let pieceDimension;
+        let currentImageUrl = ''; 
+        let uploadedImageUrl = null; 
+        let pieceShapes = []; 
+        let lastTapTime = 0; 
+        let lastTapPieceId = null;
+        
+        // タッチデバイス用の変数
+        let touchDraggedElement = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+        let isTouchDragging = false;
+
+        // --- HTML Elements ---
+        const piecesContainerEl = document.getElementById('pieces-container');
+        const boardContainerEl = document.getElementById('board-container');
+        const messageEl = document.getElementById('message');
+        const startButton = document.getElementById('start-button');
+        const imagePreviewEl = document.getElementById('image-preview');
+        const imageUploadInput = document.getElementById('image-upload');
+        const difficultyButtons = {
+            veryEasy: document.getElementById('btn-very-easy'),
+            easy: document.getElementById('btn-easy'),
+            medium: document.getElementById('btn-medium'),
+            hard: document.getElementById('btn-hard'),
+        };
+
+        // --- Event Listeners ---
+        startButton.addEventListener('click', () => startGame(currentGridSize));
+        Object.values(difficultyButtons).forEach(button => {
+            button.addEventListener('click', (e) => {
+                currentGridSize = parseInt(e.target.dataset.difficulty);
+                updateDifficultyButtonStyles();
+                startGame(currentGridSize); 
+            });
+        });
+
+        imageUploadInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImageUrl = e.target.result; 
+                    startGame(currentGridSize); 
+                }
+                reader.readAsDataURL(file);
+            } else {
+                if (file) { 
+                    messageEl.textContent = '画像ファイルを選択してください。';
+                    messageEl.classList.add('text-red-600');
+                }
+                imageUploadInput.value = ''; 
+            }
+        });
+
+
+        // --- Functions ---
+        function updateDifficultyButtonStyles() {
+            Object.values(difficultyButtons).forEach(btn => btn.classList.remove('active'));
+            if (currentGridSize === 2) difficultyButtons.veryEasy.classList.add('active');
+            else if (currentGridSize === 3) difficultyButtons.easy.classList.add('active');
+            else if (currentGridSize === 4) difficultyButtons.medium.classList.add('active');
+            else if (currentGridSize === 5) difficultyButtons.hard.classList.add('active');
+        }
+        
+        // Generates an SVG data URL for a simple dog illustration
+        function getDogSvgDataUrl(size) {
+            const svgString = `
+<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .sky { fill: #87CEEB; } /* 空の背景色 */
+    .cloud { fill: #FFFFFF; } /* 雲の色 */
+    .dog-body { fill: #DEB887; stroke: #8B4513; stroke-width: 1.5; } /* BurlyWood body, SaddleBrown stroke */
+    .dog-ear { fill: #A0522D; stroke: #8B4513; stroke-width: 1; } /* Sienna ear */
+    .dog-nose { fill: #4A3B31; } /* Darker brown nose */
+    .dog-eye { fill: #2F2F2F; } /* Dark gray eye */
+    .dog-mouth { stroke: #4A3B31; stroke-width: 1; fill: none; }
+    .dog-tongue { fill: #FF69B4; } /* HotPink tongue */
+  </style>
+  <!-- 空の背景 -->
+  <rect width="100" height="100" class="sky"/>
+  
+  <!-- 雲を追加 -->
+  <path class="cloud" d="M15 25 Q20 15 30 20 Q35 10 45 15 Q55 5 60 15 Q70 10 75 20 Q85 15 85 25 Q95 30 85 35 Q90 45 80 45 Q85 55 75 55 Q70 65 60 60 Q50 70 40 60 Q30 65 25 55 Q15 60 15 50 Q5 45 15 40 Q5 30 15 25 Z"/>
+  <path class="cloud" d="M65 80 Q70 75 75 80 Q80 70 85 75 Q90 70 90 80 Q95 85 85 90 Q90 95 80 95 Q75 100 70 95 Q65 100 60 95 Q55 100 55 90 Q50 85 60 85 Q55 75 65 80 Z"/>
+  
+  <!-- 犬のイラスト -->
+  <path class="dog-body" d="M80 65 Q95 55 85 75 Q80 70 80 65 Z"/>
+  <ellipse class="dog-body" cx="50" cy="70" rx="30" ry="22"/>
+  <circle class="dog-body" cx="50" cy="40" r="20"/>
+  <path class="dog-ear" d="M32 38 Q25 15 42 25 Z"/>
+  <path class="dog-ear" d="M68 38 Q75 15 58 25 Z"/>
+  <circle class="dog-eye" cx="42" cy="38" r="3"/>
+  <circle class="dog-eye" cx="58" cy="38" r="3"/>
+  <ellipse class="dog-nose" cx="50" cy="45" rx="5" ry="3.5"/>
+  <path class="dog-mouth" d="M45 52 Q50 57 55 52"/>
+  <path class="dog-tongue" d="M48 55 Q50 60 52 55 Z" />
+  <rect class="dog-body" x="30" y="85" width="10" height="15" rx="3"/>
+  <rect class="dog-body" x="60" y="85" width="10" height="15" rx="3"/>
+</svg>`;
+            return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgString)))}`; // Ensure proper UTF-8 handling for SVG
+        }
+
+
+        function selectDefaultImage() {
+            currentImageUrl = getDogSvgDataUrl(PUZZLE_DIMENSION);
+        }
+
+        function generatePieceShapes() {
+            pieceShapes = Array(currentGridSize).fill(null).map(() => Array(currentGridSize).fill(null));
+            const TAB = 1, BLANK = -1, FLAT = 0;
+            for (let r = 0; r < currentGridSize; r++) {
+                for (let c = 0; c < currentGridSize; c++) {
+                    const shape = { top: FLAT, right: FLAT, bottom: FLAT, left: FLAT };
+                    if (r > 0) shape.top = -pieceShapes[r-1][c].bottom; else shape.top = FLAT;
+                    if (c > 0) shape.left = -pieceShapes[r][c-1].right; else shape.left = FLAT;
+                    if (c < currentGridSize - 1) shape.right = Math.random() < 0.5 ? TAB : BLANK; else shape.right = FLAT;
+                    if (r < currentGridSize - 1) shape.bottom = Math.random() < 0.5 ? TAB : BLANK; else shape.bottom = FLAT;
+                    pieceShapes[r][c] = shape;
+                }
+            }
+        }
+        
+        function getSvgPathForPiece(shape, size) {
+            const knobSize = size * 0.20;
+            const tabWidthRatio = 0.4;
+            let d = "";
+            const startX = shape.left === 1 ? knobSize : 0;
+            const startY = shape.top === 1 ? knobSize : 0;
+            d += `M ${startX} ${startY} `;
+
+            // Top edge
+            if (shape.top === 0) { 
+                d += `h ${size - (shape.left === 1 ? knobSize : 0) - (shape.right === 1 ? knobSize : 0)} `; 
+            } else {
+                const xMid = size / 2; 
+                const halfTabWidth = (size * tabWidthRatio) / 2;
+                const controlPointOffset = knobSize * 0.8;
+                
+                // 左側から中央までの曲線
+                d += `l ${xMid - halfTabWidth - (shape.left === 1 ? knobSize:0) - controlPointOffset},0 `;
+                
+                if (shape.top === 1) { // 突起の場合
+                    // 突起部分の左側の曲線
+                    d += `c ${controlPointOffset},0 ${controlPointOffset},${-knobSize/2} ${controlPointOffset + halfTabWidth/3},${-knobSize/2} `;
+                    // 突起の頂点部分
+                    d += `s ${halfTabWidth/3},${-knobSize/2} ${halfTabWidth/3 * 2},0 `;
+                    // 突起部分の右側の曲線
+                    d += `s ${controlPointOffset},${knobSize/2} ${controlPointOffset + halfTabWidth/3},${knobSize/2} `;
+                } else { // 凹みの場合
+                    // 凹み部分の左側の曲線
+                    d += `c ${controlPointOffset},0 ${controlPointOffset},${knobSize/2} ${controlPointOffset + halfTabWidth/3},${knobSize/2} `;
+                    // 凹みの底部分
+                    d += `s ${halfTabWidth/3},${knobSize/2} ${halfTabWidth/3 * 2},0 `;
+                    // 凹み部分の右側の曲線
+                    d += `s ${controlPointOffset},${-knobSize/2} ${controlPointOffset + halfTabWidth/3},${-knobSize/2} `;
+                }
+                
+                // 中央から右側までの直線
+                d += `l ${size - (xMid + halfTabWidth) - (shape.right === 1 ? knobSize:0) - controlPointOffset},0 `;
+            }
+            
+            // Right edge
+            if (shape.right === 0) { 
+                d += `v ${size - (shape.top === 1 ? knobSize : 0) - (shape.bottom === 1 ? knobSize : 0)} `; 
+            } else {
+                const yMid = size / 2; 
+                const halfTabWidth = (size * tabWidthRatio) / 2;
+                const controlPointOffset = knobSize * 0.8;
+                
+                // 上から中央までの曲線
+                d += `l 0,${yMid - halfTabWidth - (shape.top === 1 ? knobSize:0) - controlPointOffset} `;
+                
+                if (shape.right === 1) { // 突起の場合
+                    // 突起部分の上側の曲線
+                    d += `c 0,${controlPointOffset} ${knobSize/2},${controlPointOffset} ${knobSize/2},${controlPointOffset + halfTabWidth/3} `;
+                    // 突起の頂点部分
+                    d += `s ${knobSize/2},${halfTabWidth/3} 0,${halfTabWidth/3 * 2} `;
+                    // 突起部分の下側の曲線
+                    d += `s ${-knobSize/2},${controlPointOffset} ${-knobSize/2},${controlPointOffset + halfTabWidth/3} `;
+                } else { // 凹みの場合
+                    // 凹み部分の上側の曲線
+                    d += `c 0,${controlPointOffset} ${-knobSize/2},${controlPointOffset} ${-knobSize/2},${controlPointOffset + halfTabWidth/3} `;
+                    // 凹みの底部分
+                    d += `s ${-knobSize/2},${halfTabWidth/3} 0,${halfTabWidth/3 * 2} `;
+                    // 凹み部分の下側の曲線
+                    d += `s ${knobSize/2},${controlPointOffset} ${knobSize/2},${controlPointOffset + halfTabWidth/3} `;
+                }
+                
+                // 中央から下までの直線
+                d += `l 0,${size - (yMid + halfTabWidth) - (shape.bottom === 1 ? knobSize:0) - controlPointOffset} `;
+            }
+            
+            // Bottom edge
+            if (shape.bottom === 0) { 
+                d += `h ${-(size - (shape.left === 1 ? knobSize : 0) - (shape.right === 1 ? knobSize : 0))} `; 
+            } else {
+                const xMid = size / 2; 
+                const halfTabWidth = (size * tabWidthRatio) / 2;
+                const controlPointOffset = knobSize * 0.8;
+                
+                // 右側から中央までの曲線
+                d += `l ${-(size - (xMid + halfTabWidth) - (shape.right === 1 ? knobSize:0) - controlPointOffset)},0 `;
+                
+                if (shape.bottom === 1) { // 突起の場合
+                    // 突起部分の右側の曲線
+                    d += `c ${-controlPointOffset},0 ${-controlPointOffset},${knobSize/2} ${-controlPointOffset - halfTabWidth/3},${knobSize/2} `;
+                    // 突起の頂点部分
+                    d += `s ${-halfTabWidth/3},${knobSize/2} ${-halfTabWidth/3 * 2},0 `;
+                    // 突起部分の左側の曲線
+                    d += `s ${-controlPointOffset},${-knobSize/2} ${-controlPointOffset - halfTabWidth/3},${-knobSize/2} `;
+                } else { // 凹みの場合
+                    // 凹み部分の右側の曲線
+                    d += `c ${-controlPointOffset},0 ${-controlPointOffset},${-knobSize/2} ${-controlPointOffset - halfTabWidth/3},${-knobSize/2} `;
+                    // 凹みの底部分
+                    d += `s ${-halfTabWidth/3},${-knobSize/2} ${-halfTabWidth/3 * 2},0 `;
+                    // 凹み部分の左側の曲線
+                    d += `s ${-controlPointOffset},${knobSize/2} ${-controlPointOffset - halfTabWidth/3},${knobSize/2} `;
+                }
+                
+                // 中央から左側までの直線
+                d += `l ${-(xMid - halfTabWidth - (shape.left === 1 ? knobSize:0) - controlPointOffset)},0 `;
+            }
+            
+            // Left edge
+            if (shape.left === 0) { 
+                d += `v ${-(size - (shape.top === 1 ? knobSize : 0) - (shape.bottom === 1 ? knobSize : 0))} `; 
+            } else {
+                const yMid = size / 2; 
+                const halfTabWidth = (size * tabWidthRatio) / 2;
+                const controlPointOffset = knobSize * 0.8;
+                
+                // 下から中央までの曲線
+                d += `l 0,${-(size - (yMid + halfTabWidth) - (shape.bottom === 1 ? knobSize:0) - controlPointOffset)} `;
+                
+                if (shape.left === 1) { // 突起の場合
+                    // 突起部分の下側の曲線
+                    d += `c 0,${-controlPointOffset} ${-knobSize/2},${-controlPointOffset} ${-knobSize/2},${-controlPointOffset - halfTabWidth/3} `;
+                    // 突起の頂点部分
+                    d += `s ${-knobSize/2},${-halfTabWidth/3} 0,${-halfTabWidth/3 * 2} `;
+                    // 突起部分の上側の曲線
+                    d += `s ${knobSize/2},${-controlPointOffset} ${knobSize/2},${-controlPointOffset - halfTabWidth/3} `;
+                } else { // 凹みの場合
+                    // 凹み部分の下側の曲線
+                    d += `c 0,${-controlPointOffset} ${knobSize/2},${-controlPointOffset} ${knobSize/2},${-controlPointOffset - halfTabWidth/3} `;
+                    // 凹みの底部分
+                    d += `s ${knobSize/2},${-halfTabWidth/3} 0,${-halfTabWidth/3 * 2} `;
+                    // 凹み部分の上側の曲線
+                    d += `s ${-knobSize/2},${-controlPointOffset} ${-knobSize/2},${-controlPointOffset - halfTabWidth/3} `;
+                }
+                
+                // 中央から上までの直線
+                d += `l 0,${-(yMid - halfTabWidth - (shape.top === 1 ? knobSize:0) - controlPointOffset)} `;
+            }
+            
+            d += "Z";
+            return d;
+        }
+
+        function startGame(gridSize) {
+            currentGridSize = gridSize;
+            pieceDimension = PUZZLE_DIMENSION / currentGridSize; 
+            
+            if (uploadedImageUrl) {
+                currentImageUrl = uploadedImageUrl; 
+            } else {
+                selectDefaultImage(); 
+            }
+            
+            generatePieceShapes();
+            updateDifficultyButtonStyles();
+
+            imagePreviewEl.src = currentImageUrl;
+            imagePreviewEl.alt = uploadedImageUrl ? "[アップロードされた画像の見本]" : "[パズル画像の見本]";
+            imagePreviewEl.onerror = () => {
+                imagePreviewEl.alt = '[画像読み込みエラー]';
+                imagePreviewEl.src = `https://placehold.co/${PUZZLE_DIMENSION}x${PUZZLE_DIMENSION}/CCCCCC/FFFFFF?text=Error&font=lato`;
+            };
+
+            piecesContainerEl.innerHTML = '';
+            boardContainerEl.innerHTML = '';
+            if (messageEl.classList.contains('text-red-600')) {
+                 messageEl.textContent = '';
+                 messageEl.classList.remove('text-red-600');
+            }
+
+            boardContainerEl.style.gridTemplateColumns = `repeat(${currentGridSize}, 1fr)`;
+            boardContainerEl.style.width = `${PUZZLE_DIMENSION}px`;
+            boardContainerEl.style.height = `${PUZZLE_DIMENSION}px`;
+            boardContainerEl.style.gap = '0px';
+            
+            // 難易度に合わせて罫線を追加
+            const gridLineColor = 'rgba(0, 0, 0, 0.2)';
+            boardContainerEl.style.backgroundImage = `
+                linear-gradient(${gridLineColor} 1px, transparent 1px),
+                linear-gradient(90deg, ${gridLineColor} 1px, transparent 1px)
+            `;
+            boardContainerEl.style.backgroundSize = `${pieceDimension}px ${pieceDimension}px`;
+
+            for (let i = 0; i < currentGridSize * currentGridSize; i++) {
+                const slot = document.createElement('div');
+                slot.classList.add('slot', 'bg-gray-200', 'flex', 'items-center', 'justify-center');
+                slot.style.width = `${pieceDimension}px`;
+                slot.style.height = `${pieceDimension}px`;
+                slot.dataset.slotIndex = i;
+                slot.addEventListener('dragover', handleDragOver);
+                slot.addEventListener('dragenter', handleDragEnter);
+                slot.addEventListener('dragleave', handleDragLeave);
+                slot.addEventListener('drop', handleDropOnSlot);
+                boardContainerEl.appendChild(slot);
+            }
+
+            const pieces = [];
+            for (let r = 0; r < currentGridSize; r++) {
+                for (let c = 0; c < currentGridSize; c++) {
+                    const i = r * currentGridSize + c;
+                    const piece = document.createElement('div');
+                    piece.classList.add('piece');
+                    piece.style.width = `${pieceDimension}px`;
+                    piece.style.height = `${pieceDimension}px`;
+                    piece.style.backgroundImage = `url(${currentImageUrl})`;
+                    piece.style.backgroundRepeat = 'no-repeat';
+                    const bgPosX = -c * pieceDimension;
+                    const bgPosY = -r * pieceDimension;
+                    piece.style.backgroundPosition = `${bgPosX}px ${bgPosY}px`;
+                    piece.style.backgroundSize = `${PUZZLE_DIMENSION}px ${PUZZLE_DIMENSION}px`;
+
+                    const shape = pieceShapes[r][c];
+                    const svgPath = getSvgPathForPiece(shape, pieceDimension); 
+                    const knobSize = pieceDimension * 0.20;
+                    const viewBoxX = shape.left === 1 ? -knobSize : 0;
+                    const viewBoxY = shape.top === 1 ? -knobSize : 0;
+                    const viewBoxWidth = pieceDimension + (shape.left === 1 ? knobSize : 0) + (shape.right === 1 ? knobSize : 0);
+                    const viewBoxHeight = pieceDimension + (shape.top === 1 ? knobSize : 0) + (shape.bottom === 1 ? knobSize : 0);
+                    const clipPathUrl = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='${viewBoxWidth}' height='${viewBoxHeight}' viewBox='${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}'><path d='${svgPath}' fill='black'/></svg>")`;
+                    piece.style.clipPath = clipPathUrl;
+                    piece.style.webkitClipPath = clipPathUrl;
+
+                    piece.draggable = true;
+                    piece.dataset.pieceIndex = i;
+                    const initialRotation = Math.floor(Math.random() * 4) * 90; 
+                    piece.dataset.rotation = initialRotation.toString();
+                    piece.style.setProperty('--rotation', `${initialRotation}deg`);
+
+                    piece.id = `piece-${i}`;
+                    piece.addEventListener('dragstart', handleDragStart);
+                    piece.addEventListener('dragend', handleDragEnd);
+                    piece.addEventListener('contextmenu', handlePieceRightClickRotate); 
+                    piece.addEventListener('touchend', handlePieceTapRotate);
+                    piece.addEventListener('dblclick', handlePieceDoubleClickRotate);
+                    
+                    // タッチイベントリスナーを追加
+                    piece.addEventListener('touchstart', handleTouchStart, { passive: false });
+                    piece.addEventListener('touchmove', handleTouchMove, { passive: false });
+                    piece.addEventListener('touchend', handleTouchEnd);
+                    pieces.push(piece);
+                }
+            }
+            
+            shuffleArray(pieces).forEach(piece => {
+                piecesContainerEl.appendChild(piece);
+            });
+            
+            if (pieces.length > 0 && piecesContainerEl.parentElement) {
+                // Dynamic height for pieces container is handled by flex-grow and min-height
+            }
+
+            piecesContainerEl.addEventListener('dragover', handleDragOver);
+            piecesContainerEl.addEventListener('dragenter', handleDragEnter);
+            piecesContainerEl.addEventListener('dragleave', handleDragLeave);
+            piecesContainerEl.addEventListener('drop', handleDropOnPiecesContainer);
+            
+            // ボード全体にタッチイベントリスナーを追加
+            document.addEventListener('touchmove', handleDocumentTouchMove, { passive: false });
+            document.addEventListener('touchend', handleDocumentTouchEnd);
+        }
+        
+        function rotatePiece(pieceElement) {
+            if (!pieceElement || !pieceElement.draggable) return; 
+
+            let currentRotation = parseInt(pieceElement.dataset.rotation) || 0;
+            currentRotation = (currentRotation + 90) % 360;
+            pieceElement.dataset.rotation = currentRotation.toString();
+            pieceElement.style.setProperty('--rotation', `${currentRotation}deg`); 
+            
+            // Check for win condition after rotation if the piece is on the board
+            if (pieceElement.parentElement && pieceElement.parentElement.classList.contains('slot')) {
+                checkWinCondition();
+            }
+        }
+        
+        function handlePieceDoubleClickRotate(event) {
+            event.preventDefault();
+            const piece = event.target.closest('.piece');
+            rotatePiece(piece);
+        }
+
+        function handlePieceRightClickRotate(event) {
+            event.preventDefault(); 
+            const piece = event.target.closest('.piece');
+            rotatePiece(piece);
+        }
+
+        function handlePieceTapRotate(event) {
+            const piece = event.target.closest('.piece');
+            if (!piece || !piece.draggable) return;
+
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+
+            if (lastTapPieceId === piece.id && tapLength < 400 && tapLength > 50) { 
+                event.preventDefault(); 
+                rotatePiece(piece);
+                lastTapTime = 0; 
+                lastTapPieceId = null;
+            } else { 
+                lastTapTime = currentTime;
+                lastTapPieceId = piece.id;
+            }
+        }
+
+        function handleDragStart(event) {
+            draggedElement = event.target.closest('.piece');
+            if (!draggedElement) return;
+            
+            const offsetX = pieceDimension / 2;
+            const offsetY = pieceDimension / 2;
+            
+            // 回転を維持したドラッグ画像を作成
+            const currentRotation = parseInt(draggedElement.dataset.rotation) || 0;
+            const dragImage = draggedElement.cloneNode(true);
+            dragImage.style.position = 'absolute';
+            dragImage.style.top = '-1000px';
+            dragImage.style.transform = `rotate(${currentRotation}deg)`;
+            document.body.appendChild(dragImage);
+            
+            try {
+                // 作成した回転済みの要素をドラッグ画像として使用
+                event.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
+                
+                // クリーンアップ用のタイマーを設定
+                setTimeout(() => {
+                    document.body.removeChild(dragImage);
+                }, 0);
+            } catch (e) {
+                console.warn("setDragImage failed, using default drag image.", e);
+                // エラーが発生した場合はすぐに要素を削除
+                document.body.removeChild(dragImage);
+            }
+
+            event.dataTransfer.setData('text/plain', draggedElement.id);
+            event.dataTransfer.effectAllowed = 'move';
+            
+            setTimeout(() => { 
+                if (draggedElement) {
+                    draggedElement.classList.add('dragging'); // Apply scaling and opacity to the original element
+                }
+            }, 0);
+        }
+
+        function handleDragEnd(event) {
+            if (draggedElement) {
+               draggedElement.classList.remove('dragging');
+            }
+            document.querySelectorAll('.slot, #pieces-container').forEach(el => el.classList.remove('drag-over'));
+            draggedElement = null;
+        }
+
+        function handleDragOver(event) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }
+        function handleDragEnter(event) {
+            event.preventDefault();
+            const target = event.target.closest('.slot, #pieces-container');
+            if (target) target.classList.add('drag-over');
+        }
+        function handleDragLeave(event) {
+            const target = event.target.closest('.slot, #pieces-container');
+            if (target && !target.contains(event.relatedTarget)) target.classList.remove('drag-over');
+        }
+
+        function handleDropOnSlot(event) {
+            event.preventDefault();
+            if (!draggedElement) return;
+            const targetSlot = event.target.closest('.slot');
+            if (!targetSlot) return;
+            targetSlot.classList.remove('drag-over');
+            const existingPieceInSlot = targetSlot.querySelector('.piece');
+            if (draggedElement.parentElement.id === 'pieces-container') {
+                if (existingPieceInSlot) piecesContainerEl.appendChild(existingPieceInSlot);
+                targetSlot.appendChild(draggedElement);
+            } else if (draggedElement.parentElement.classList.contains('slot')) {
+                if (existingPieceInSlot) draggedElement.parentElement.appendChild(existingPieceInSlot);
+                targetSlot.appendChild(draggedElement);
+            }
+            checkWinCondition();
+        }
+
+        function handleDropOnPiecesContainer(event) {
+            event.preventDefault();
+            if (!draggedElement) return;
+            const target = event.target.closest('#pieces-container');
+            if (!target) return;
+            target.classList.remove('drag-over');
+            if (draggedElement.parentElement.classList.contains('slot')) {
+                 target.appendChild(draggedElement);
+            }
+        }
+        
+        // タッチイベント処理関数
+        function handleTouchStart(event) {
+            event.preventDefault(); // デフォルトのスクロール動作を防止
+            
+            const piece = event.target.closest('.piece');
+            if (!piece) return;
+            
+            // ダブルタップによる回転の処理は既存のhandlePieceTapRotateで行われるため、
+            // ここでは単一タップのドラッグ処理のみを行う
+            
+            const touch = event.touches[0];
+            const pieceRect = piece.getBoundingClientRect();
+            
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            touchOffsetX = touchStartX - pieceRect.left;
+            touchOffsetY = touchStartY - pieceRect.top;
+            
+            touchDraggedElement = piece;
+            isTouchDragging = true;
+            
+            // ドラッグ中のスタイルを適用
+            setTimeout(() => {
+                if (touchDraggedElement && isTouchDragging) {
+                    touchDraggedElement.classList.add('dragging');
+                }
+            }, 100); // 短い遅延を設けて、タップとドラッグを区別
+        }
+        
+        function handleTouchMove(event) {
+            if (!touchDraggedElement || !isTouchDragging) return;
+            
+            event.preventDefault(); // スクロールを防止
+            
+            const touch = event.touches[0];
+            const x = touch.clientX - touchOffsetX;
+            const y = touch.clientY - touchOffsetY;
+            
+            // ドラッグ中の要素の位置を更新
+            touchDraggedElement.style.position = 'fixed';
+            touchDraggedElement.style.left = `${x}px`;
+            touchDraggedElement.style.top = `${y}px`;
+            touchDraggedElement.style.zIndex = '1000';
+            
+            // ドロップ可能な要素の検出
+            const elementsAtPoint = document.elementsFromPoint(touch.clientX, touch.clientY);
+            const slot = elementsAtPoint.find(el => el.classList.contains('slot'));
+            const piecesContainer = elementsAtPoint.find(el => el.id === 'pieces-container');
+            
+            // ドラッグオーバー効果を適用
+            document.querySelectorAll('.slot, #pieces-container').forEach(el => el.classList.remove('drag-over'));
+            if (slot) slot.classList.add('drag-over');
+            else if (piecesContainer) piecesContainer.classList.add('drag-over');
+        }
+        
+        function handleTouchEnd(event) {
+            if (!touchDraggedElement || !isTouchDragging) return;
+            
+            const touch = event.changedTouches[0];
+            
+            // ドロップ先の検出
+            const elementsAtPoint = document.elementsFromPoint(touch.clientX, touch.clientY);
+            const slot = elementsAtPoint.find(el => el.classList.contains('slot'));
+            const piecesContainer = elementsAtPoint.find(el => el.id === 'pieces-container');
+            
+            // ドロップ処理
+            if (slot) {
+                const existingPieceInSlot = slot.querySelector('.piece');
+                if (touchDraggedElement.parentElement.id === 'pieces-container') {
+                    if (existingPieceInSlot) piecesContainerEl.appendChild(existingPieceInSlot);
+                    slot.appendChild(touchDraggedElement);
+                } else if (touchDraggedElement.parentElement.classList.contains('slot')) {
+                    if (existingPieceInSlot) touchDraggedElement.parentElement.appendChild(existingPieceInSlot);
+                    slot.appendChild(touchDraggedElement);
+                }
+                checkWinCondition();
+            } else if (piecesContainer && touchDraggedElement.parentElement.classList.contains('slot')) {
+                piecesContainer.appendChild(touchDraggedElement);
+            }
+            
+            // ドラッグ状態をリセット
+            resetTouchDrag();
+        }
+        
+        function handleDocumentTouchMove(event) {
+            if (isTouchDragging) {
+                event.preventDefault(); // ドラッグ中はページスクロールを防止
+            }
+        }
+        
+        function handleDocumentTouchEnd() {
+            resetTouchDrag();
+        }
+        
+        function resetTouchDrag() {
+            if (touchDraggedElement) {
+                // スタイルをリセット
+                touchDraggedElement.style.position = '';
+                touchDraggedElement.style.left = '';
+                touchDraggedElement.style.top = '';
+                touchDraggedElement.style.zIndex = '';
+                touchDraggedElement.classList.remove('dragging');
+                
+                document.querySelectorAll('.slot, #pieces-container').forEach(el => el.classList.remove('drag-over'));
+                
+                touchDraggedElement = null;
+                isTouchDragging = false;
+            }
+        }
+
+        function checkWinCondition() {
+            let allCorrect = true;
+            const slots = boardContainerEl.querySelectorAll('.slot');
+            if (slots.length !== currentGridSize * currentGridSize) {
+                allCorrect = false; // Should not happen if board generation is correct
+            }
+
+            for (let i = 0; i < slots.length; i++) {
+                const slot = slots[i];
+                const piece = slot.querySelector('.piece');
+                // Ensure piece exists and its rotation is 0 (or a multiple of 360, handled by % 360)
+                const pieceRotation = piece ? (parseInt(piece.dataset.rotation) || 0) % 360 : -1; 
+                
+                if (!piece || piece.dataset.pieceIndex !== slot.dataset.slotIndex || pieceRotation !== 0) {
+                    allCorrect = false; 
+                    break;
+                }
+            }
+
+            if (allCorrect && piecesContainerEl.children.length === 0) { // Also ensure no pieces are left in the container
+                messageEl.textContent = 'おめでとうございます！パズル完成です！';
+                messageEl.classList.remove('text-red-600');
+                messageEl.classList.add('text-green-600');
+                
+                // パズル完成時のエフェクトを追加
+                const pieces = boardContainerEl.querySelectorAll('.piece');
+                pieces.forEach((p, index) => {
+                    p.draggable = false; 
+                    p.style.cursor = 'default';
+                    
+                    // 完成エフェクトのアニメーション
+                    setTimeout(() => {
+                        p.style.transition = 'all 0.5s ease-in-out';
+                        p.style.transform = 'scale(1.05) rotate(0deg)';
+                        p.style.boxShadow = '0 0 20px 5px rgba(255, 215, 0, 0.7)'; // 金色の光るエフェクト
+                        
+                        setTimeout(() => {
+                            p.style.transform = 'scale(1) rotate(0deg)';
+                            p.style.boxShadow = '0 0 10px 2px rgba(255, 215, 0, 0.5)';
+                        }, 500);
+                    }, index * 50); // ピースごとに少しずつ遅延させる
+                });
+                
+                // 全体のエフェクト
+                setTimeout(() => {
+                    boardContainerEl.style.transition = 'all 0.8s ease-in-out';
+                    boardContainerEl.style.boxShadow = '0 0 30px 10px rgba(255, 215, 0, 0.8)';
+                    
+                    setTimeout(() => {
+                        boardContainerEl.style.boxShadow = '0 0 15px 5px rgba(255, 215, 0, 0.5)';
+                    }, 800);
+                }, pieces.length * 50 + 100);
+                
+            } else {
+                 // Clear success message if not won, but don't overwrite error messages (e.g., image upload error)
+                 if (!messageEl.classList.contains('text-red-600')) { 
+                    messageEl.textContent = '';
+                 }
+            }
+        }
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // --- Initial Game Start ---
+        updateDifficultyButtonStyles(); 
+        startGame(currentGridSize);
+        
+        // ピース置き場の説明文を更新
+        document.querySelector('h2.text-xl.font-semibold.mb-2.text-gray-700.text-center').textContent = 'ピース置き場（右クリックまたはダブルクリックで回転）';
+    </script>
+</body>
+</html>
