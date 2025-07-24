@@ -5,19 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ロジカルルートパズル</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'M PLUS Rounded 1c', sans-serif;
             overscroll-behavior: none;
         }
         #grid-container, .grid-cell, .palette-item {
             touch-action: none; /* Prevent default touch actions only on game elements */
         }
         .grid-cell, .palette-item {
-            width: 50px;
-            height: 50px;
-            border: 1px solid #e2e8f0; /* gray-200 */
+            width: 60px;
+            height: 60px;
+            border: 1px solid #e0f2fe; /* sky-100 */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -25,19 +25,30 @@
             user-select: none;
             position: relative;
             box-sizing: border-box;
+            border-radius: 8px;
         }
         .palette-item:active {
             cursor: grabbing;
         }
         .palette-item.selected {
-            border-color: #3b82f6; /* blue-500 */
+            border-color: #0284c7; /* sky-600 */
             border-width: 2px;
-            outline: 2px solid #3b82f6;
+            outline: 3px solid #38bdf8; /* sky-400 */
         }
-        .start-tile { background-color: #86efac; /* green-300 */ }
-        .end-tile { background-color: #fca5a5; /* red-300 */ }
-        .jewel-tile-bg { background-color: #fde047; /* yellow-300 */ }
-        .obstacle-tile { background-color: #9ca3af; /* gray-400 */ cursor: not-allowed; }
+        .eraser-selected {
+            background-color: #f1f5f9 !important; /* slate-100 */
+            border-color: #dc2626 !important; /* red-600 */
+            border-width: 3px !important;
+            outline: 3px solid #fca5a5 !important; /* red-300 */
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.3) !important;
+        }
+        .eraser-selected svg {
+            color: #dc2626 !important; /* red-600 */
+        }
+        .start-tile { background-color: #a3e635; /* lime-400 */ }
+        .end-tile { background-color: #fb7185; /* rose-400 */ }
+        .jewel-tile-bg { background-color: #ffffff; /* white */ }
+        .obstacle-tile { background-color: #a8a29e; /* stone-400 */ cursor: not-allowed; }
 
         .path-svg {
             width: 100%;
@@ -45,24 +56,43 @@
             pointer-events: none; /* Allow drag/drop events to pass through to cell */
         }
         .path-line {
-            stroke: #3b82f6; /* blue-500 */
-            stroke-width: 5;
+            stroke: #0ea5e9; /* sky-500 */
+            stroke-width: 6;
             fill: none;
             stroke-linecap: round;
             stroke-linejoin: round;
         }
         .jewel-marker {
-            width: 20px;
-            height: 20px;
-            background-color: #ef4444; /* red-500 */
-            border-radius: 50%;
+            width: 24px;
+            height: 24px;
             position: absolute;
             pointer-events: none;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); /* Diamond shape */
+        }
+        .jewel-red {
+            background-color: #f87171; /* red-400 */
+            border: 2px solid #b91c1c; /* red-700 */
+        }
+        .jewel-blue {
+            background-color: #60a5fa; /* blue-400 */
+            border: 2px solid #1d4ed8; /* blue-700 */
+        }
+        .jewel-yellow {
+            background-color: #facc15; /* yellow-400 */
+            border: 2px solid #ca8a04; /* yellow-600 */
+        }
+        .jewel-green {
+            background-color: #4ade80; /* green-400 */
+            border: 2px solid #15803d; /* green-700 */
+        }
+        .jewel-purple {
+            background-color: #c084fc; /* purple-400 */
+            border: 2px solid #7e22ce; /* purple-700 */
         }
         .tile-text {
             font-size: 0.6rem; 
-            font-weight: bold;
-            color: #374151;
+            font-weight: 800;
+            color: #1f2937;
             position: absolute;
             top: 50%;
             left: 50%;
@@ -70,12 +100,19 @@
             pointer-events: none; 
             line-height: 1;
             text-align: center;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.7);
         }
         button, .difficulty-button {
             padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            transition: background-color 0.2s;
+            border-radius: 0.75rem; /* more rounded */
+            font-weight: 700;
+            transition: all 0.1s ease-in-out;
+            border-bottom-width: 4px;
+            transform: translateY(0);
+        }
+        button:active, .difficulty-button:active {
+            transform: translateY(2px);
+            border-bottom-width: 2px;
         }
         #animation-canvas {
             position: absolute;
@@ -95,53 +132,54 @@
             .grid-cell, .palette-item {
                 width: calc((100vw - 40px - (var(--grid-size) - 1) * 1px) / var(--grid-size));
                 height: calc((100vw - 40px - (var(--grid-size) - 1) * 1px) / var(--grid-size));
+                border-radius: 4px;
             }
             .jewel-marker { width: 30%; height: 30%; }
             #palette { gap: 0.25rem; }
             .palette-item { padding: 0.1rem; }
-            .path-line { stroke-width: 4; }
-            h1 { font-size: 1.5rem; }
-            button, .difficulty-button { padding: 0.5rem 1rem; font-size: 0.875rem; }
+            .path-line { stroke-width: 5; }
+            h1 { font-size: 1.8rem; }
+            button, .difficulty-button { padding: 0.5rem 1rem; font-size: 0.875rem; border-radius: 0.5rem;}
             .tile-text { font-size: 0.5rem; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         }
         #message-area { min-height: 2rem; transition: all 0.3s ease-in-out; }
         .hidden { display: none; }
     </style>
 </head>
-<body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4 selection:bg-blue-200">
+<body class="bg-sky-100 flex flex-col items-center justify-center min-h-screen p-4 selection:bg-blue-200">
 
-    <div id="title-screen" class="flex flex-col items-center justify-center min-h-screen w-full max-w-2xl mx-auto">
-        <h1 class="text-4xl sm:text-5xl font-bold text-slate-700 mb-12 text-center">ロジカルルートパズル</h1>
+    <div id="title-screen" class="flex flex-col items-center justify-center min-h-screen w-full max-w-4xl mx-auto">
+        <h1 class="text-5xl sm:text-6xl font-extrabold text-sky-700 mb-12 text-center" style="text-shadow: 3px 3px 0px #e0f2fe;">ロジカルルートパズル</h1>
         <div id="difficulty-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full sm:w-auto">
-            <button data-difficulty="0" class="difficulty-button bg-green-500 hover:bg-green-600 text-white p-3 sm:p-4 rounded-lg text-lg sm:text-xl">やさしい</button>
-            <button data-difficulty="1" class="difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white p-3 sm:p-4 rounded-lg text-lg sm:text-xl">ふつう</button>
-            <button data-difficulty="2" class="difficulty-button bg-orange-500 hover:bg-orange-600 text-white p-3 sm:p-4 rounded-lg text-lg sm:text-xl">むずかしい</button>
-            <button data-difficulty="3" class="difficulty-button bg-red-500 hover:bg-red-600 text-white p-3 sm:p-4 rounded-lg text-lg sm:text-xl">すごくむずかしい</button>
-            <button data-difficulty="4" class="difficulty-button bg-purple-600 hover:bg-purple-700 text-white p-3 sm:p-4 rounded-lg text-lg sm:text-xl">エキスパート</button>
+            <button data-difficulty="0" class="difficulty-button bg-green-500 hover:bg-green-600 text-white border-green-700 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">やさしい</button>
+            <button data-difficulty="1" class="difficulty-button bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-700 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">ふつう</button>
+            <button data-difficulty="2" class="difficulty-button bg-orange-500 hover:bg-orange-600 text-white border-orange-700 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">むずかしい</button>
+            <button data-difficulty="3" class="difficulty-button bg-red-500 hover:bg-red-600 text-white border-red-700 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">すごくむずかしい</button>
+            <button data-difficulty="4" class="difficulty-button bg-purple-600 hover:bg-purple-700 text-white border-purple-800 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">エキスパート</button>
         </div>
     </div>
 
-    <div id="game-app" class="hidden bg-white p-4 sm:p-6 rounded-xl shadow-2xl w-full max-w-2xl">
-        <p id="level-description" class="text-center text-slate-500 mb-4"></p>
+    <div id="game-app" class="hidden bg-sky-50 p-4 sm:p-6 rounded-2xl shadow-lg w-full max-w-4xl">
+        <p id="level-description" class="text-center text-slate-600 mb-4 font-bold"></p>
 
         <div id="palette-container" class="mb-6 flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 flex-wrap">
-            <div id="palette" class="flex gap-1 sm:gap-2 flex-wrap justify-center p-2 bg-slate-200 rounded-lg">
+            <div id="palette" class="flex gap-1 sm:gap-2 flex-wrap justify-center p-2 bg-sky-200 rounded-lg">
                 </div>
-            <button id="eraser-button" title="消しゴム (Eraser)" class="palette-item p-0 flex justify-center items-center bg-white hover:bg-slate-50 w-[50px] h-[50px]">
+            <button id="eraser-button" title="消しゴム (Eraser)" class="palette-item p-0 flex justify-center items-center bg-white hover:bg-slate-50 w-[60px] h-[60px] border-slate-400">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-eraser text-slate-600"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21H7Z"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>
             </button>
         </div>
         
         <div id="grid-wrapper" class="relative mx-auto w-max">
-            <div id="grid-container" class="border border-slate-400 shadow-md" style="display: grid; gap: 1px; background-color: #94a3b8;">
+            <div id="grid-container" class="border border-sky-300 shadow-md" style="display: grid; gap: 1px; background-color: #7dd3fc;">
                 </div>
             <canvas id="animation-canvas" class="absolute top-0 left-0 pointer-events-none"></canvas>
         </div>
 
         <div id="controls" class="mt-6 flex justify-center items-center space-x-3 sm:space-x-4">
-            <button id="check-button" class="bg-blue-500 hover:bg-blue-600 text-white">チェック</button>
-            <button id="reset-button" class="bg-amber-500 hover:bg-amber-600 text-white">リセット</button>
-            <button id="back-to-title-button" class="bg-gray-500 hover:bg-gray-600 text-white">タイトルへ</button>
+            <button id="check-button" class="bg-blue-500 hover:bg-blue-600 text-white border-blue-700">チェック</button>
+            <button id="reset-button" class="bg-amber-500 hover:bg-amber-600 text-white border-amber-700">リセット</button>
+            <button id="back-to-title-button" class="bg-gray-500 hover:bg-gray-600 text-white border-gray-700">タイトルへ</button>
         </div>
 
         <div id="message-area" class="mt-4 text-center font-semibold"></div>
@@ -153,18 +191,19 @@
     <script>
         // --- Constants and Definitions ---
         const pieceDefinitions = {
-          'straight-h': { svgPath: 'M 0,25 L 50,25', connections: { 'left': 'right', 'right': 'left' }, name: '直線 (横)' },
-          'straight-v': { svgPath: 'M 25,0 L 25,50', connections: { 'top': 'bottom', 'bottom': 'top' }, name: '直線 (縦)' },
-          'curve-ne':   { svgPath: 'M 25,0 L 25,25 L 50,25', connections: { 'top': 'right', 'right': 'top' }, name: 'カーブ (右上)' },
-          'curve-nw':   { svgPath: 'M 25,0 L 25,25 L 0,25', connections: { 'top': 'left', 'left': 'top' }, name: 'カーブ (左上)' },
-          'curve-se':   { svgPath: 'M 25,50 L 25,25 L 50,25', connections: { 'bottom': 'right', 'right': 'bottom' }, name: 'カーブ (右下)' },
-          'curve-sw':   { svgPath: 'M 25,50 L 25,25 L 0,25', connections: { 'bottom': 'left', 'left': 'bottom' }, name: 'カーブ (左下)' },
+          'straight-h': { svgPath: 'M 0,30 L 60,30', connections: { 'left': 'right', 'right': 'left' }, name: '直線 (横)' },
+          'straight-v': { svgPath: 'M 30,0 L 30,60', connections: { 'top': 'bottom', 'bottom': 'top' }, name: '直線 (縦)' },
+          'curve-ne':   { svgPath: 'M 30,0 L 30,30 L 60,30', connections: { 'top': 'right', 'right': 'top' }, name: 'カーブ (右上)' },
+          'curve-nw':   { svgPath: 'M 30,0 L 30,30 L 0,30', connections: { 'top': 'left', 'left': 'top' }, name: 'カーブ (左上)' },
+          'curve-se':   { svgPath: 'M 30,60 L 30,30 L 60,30', connections: { 'bottom': 'right', 'right': 'bottom' }, name: 'カーブ (右下)' },
+          'curve-sw':   { svgPath: 'M 30,60 L 30,30 L 0,30', connections: { 'bottom': 'left', 'left': 'bottom' }, name: 'カーブ (左下)' },
         };
 
         const dr = { 'top': -1, 'bottom': 1, 'left': 0, 'right': 0 };
         const dc = { 'top': 0, 'bottom': 0, 'left': -1, 'right': 1 };
         const oppositeDir = { 'top': 'bottom', 'bottom': 'top', 'left': 'right', 'right': 'left' };
         const allDirections = ['top', 'right', 'bottom', 'left'];
+        const jewelColors = ['red', 'blue', 'yellow', 'green', 'purple'];
 
         const levels = [ // Mapped to difficulties 0: Easy, 1: Normal, 2: Hard, 3: Very Hard, 4: Expert
             { id: 'level1', name: '基本の道', gridSize: 4, start: { r: 1, c: 0 }, end: { r: 1, c: 3 }, jewels: [{ r: 1, c: 1 }], obstacles: [{r:0,c:2}, {r:2,c:2}], description: "やさしい: スタートから宝石を通り、ゴールを目指そう！" },
@@ -238,7 +277,9 @@
             const { start, end, jewels, obstacles } = levelConfig;
             gridSetup[start.r][start.c] = { type: 'start' };
             gridSetup[end.r][end.c] = { type: 'end' };
-            (jewels || []).forEach(j => gridSetup[j.r][j.c] = { type: 'jewel' });
+            (jewels || []).forEach((j, index) => {
+                gridSetup[j.r][j.c] = { type: 'jewel', color: jewelColors[index % jewelColors.length] };
+            });
             (obstacles || []).forEach(o => gridSetup[o.r][o.c] = { type: 'obstacle' });
             
             selectedPieceType = null; 
@@ -286,7 +327,7 @@
                 item.draggable = true; // Make palette items draggable
 
                 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('viewBox', '0 0 50 50');
+                svg.setAttribute('viewBox', '0 0 60 60');
                 svg.classList.add('path-svg');
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', piece.svgPath);
@@ -303,7 +344,12 @@
         }
         
         function selectPiece(pieceType) { // Used for eraser
-            selectedPieceType = pieceType;
+            // Toggle eraser: if already selected, deselect it
+            if (selectedPieceType === pieceType) {
+                selectedPieceType = null;
+            } else {
+                selectedPieceType = pieceType;
+            }
             updatePaletteSelection();
         }
 
@@ -312,6 +358,7 @@
                 item.classList.toggle('selected', item.dataset.pieceType === selectedPieceType && selectedPieceType === 'eraser');
             });
             eraserButton.classList.toggle('selected', selectedPieceType === 'eraser');
+            eraserButton.classList.toggle('eraser-selected', selectedPieceType === 'eraser');
         }
 
         function renderGrid() {
@@ -339,7 +386,9 @@
                         cell.classList.add('obstacle-tile');
                     } else if (fixedElem.type === 'jewel') {
                         cell.classList.add('jewel-tile-bg'); 
-                        const jewelMarker = document.createElement('div'); jewelMarker.classList.add('jewel-marker'); cell.appendChild(jewelMarker);
+                        const jewelMarker = document.createElement('div');
+                        jewelMarker.classList.add('jewel-marker', `jewel-${fixedElem.color}`);
+                        cell.appendChild(jewelMarker);
                     } else {
                         cell.classList.add('bg-slate-50'); // Empty droppable cell
                     }
@@ -348,7 +397,7 @@
                     if (playerPiece && pieceDefinitions[playerPiece.pieceType]) {
                         const pieceDef = pieceDefinitions[playerPiece.pieceType];
                         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                        svg.setAttribute('viewBox', '0 0 50 50');
+                        svg.setAttribute('viewBox', '0 0 60 60');
                         svg.classList.add('path-svg');
                         svg.style.position = 'relative'; svg.style.zIndex = '10';
                         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -404,24 +453,10 @@
             event.dataTransfer.effectAllowed = 'move';
             draggedPieceType = pieceType; // Store for touch fallback or general knowledge
 
-            // Create visual feedback for the drag
-            const pieceDef = pieceDefinitions[pieceType];
-            dragFeedbackElement.innerHTML = ''; // Clear previous
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('viewBox', '0 0 50 50');
-            svg.style.width = '50px'; svg.style.height = '50px';
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', pieceDef.svgPath);
-            path.classList.add('path-line');
-            svg.appendChild(path);
-            dragFeedbackElement.appendChild(svg);
-            dragFeedbackElement.classList.remove('hidden');
-            // Position feedback (will be updated in drag event if needed, or use OS default)
-            // For custom feedback, would need to hide default drag image and update position on drag.
+            // Disable visual feedback for drag (removed dragFeedbackElement display)
         }
 
         document.addEventListener('dragend', () => {
-            dragFeedbackElement.classList.add('hidden');
             draggedPieceType = null;
         });
         
@@ -436,7 +471,6 @@
             if (pieceType && pieceDefinitions[pieceType]) {
                 placePieceOnGrid(r, c, pieceType);
             }
-            dragFeedbackElement.classList.add('hidden');
             draggedPieceType = null;
         }
 
@@ -527,7 +561,8 @@
             let currentC = startPos.c;
             let currentDir = null; // Initial direction determined by first piece
 
-            // Find initial direction
+            // Find initial direction and check for multiple paths
+            let validDirections = [];
             for (const dir of allDirections) {
                 const nr = currentR + dr[dir];
                 const nc = currentC + dc[dir];
@@ -535,19 +570,28 @@
                     const firstPiece = playerGrid[nr][nc];
                     const pieceDef = pieceDefinitions[firstPiece.pieceType];
                     if (pieceDef.connections[oppositeDir[dir]]) { // Can this piece be entered from start's direction?
-                        currentDir = dir;
-                        pathSegments.push({ r: currentR, c: currentC, type: 'start', exitDir: dir });
-                        currentR = nr;
-                        currentC = nc;
-                        break;
+                        validDirections.push(dir);
                     }
                 }
             }
 
-            if (!currentDir) {
+            if (validDirections.length === 0) {
+                // No path from start - show error immediately without animation
                 showMessage('失敗: スタート地点から道が始まっていません。', 'error');
                 return;
             }
+
+            if (validDirections.length > 1) {
+                // Multiple paths from start - show error immediately without animation
+                showMessage('失敗: スタート地点から複数の道が出ています。道は1つだけにしてください。', 'error');
+                return;
+            }
+
+            // Use the single valid direction
+            currentDir = validDirections[0];
+            pathSegments.push({ r: currentR, c: currentC, type: 'start', exitDir: currentDir });
+            currentR = currentR + dr[currentDir];
+            currentC = currentC + dc[currentDir];
 
             const visitedCells = new Set([`${startPos.r},${startPos.c}`]);
             let tempPathIsValid = true;
@@ -592,21 +636,8 @@
                 currentC += dc[currentDir];
             }
             
-            if (!tempPathIsValid || pathSegments.length === 0 || pathSegments[pathSegments.length-1].type !== 'end') {
-                 // This pre-check is simplified. The animation will do the detailed error reporting.
-                 // If the static check already shows a clear break, obstacle, or loop not leading to end:
-                let lastValidSegment = pathSegments.length > 0 ? pathSegments[pathSegments.length-1] : {r: startPos.r, c: startPos.c};
-                if (fixedSetup(lastValidSegment.r, lastValidSegment.c).type === 'obstacle') {
-                     animatePath(pathSegments, 'obstacle');
-                } else if (playerGrid[lastValidSegment.r] && playerGrid[lastValidSegment.r][lastValidSegment.c] && !pieceDefinitions[playerGrid[lastValidSegment.r][lastValidSegment.c].pieceType].connections[oppositeDir[currentDir]]) {
-                     animatePath(pathSegments, 'dead_end'); // Last piece is a dead end for the incoming path
-                }
-                else {
-                    animatePath(pathSegments, 'broken'); // Generic broken or loop
-                }
-                return;
-            }
-            animatePath(pathSegments, 'pending'); // Start animation
+            // Always start animation - let the animation handle error display
+            animatePath(pathSegments, 'pending');
         }
 
         function fixedSetup(r,c) { // Helper
@@ -615,10 +646,6 @@
         }
 
         function animatePath(segments, initialStatus = 'pending') {
-            if (segments.length === 0 && initialStatus !== 'broken' && initialStatus !== 'obstacle') { // Path didn't even start
-                showMessage('失敗: スタート地点から道が繋がっていません。', 'error');
-                return;
-            }
             isAnimating = true;
             checkButton.disabled = true;
             resetButton.disabled = true;
@@ -634,17 +661,6 @@
                 const cellWidth = animationCanvas.width / currentLevelConfig.gridSize;
                 const cellHeight = animationCanvas.height / currentLevelConfig.gridSize;
                 return { x: c * cellWidth + cellWidth / 2, y: r * cellHeight + cellHeight / 2 };
-            }
-
-            function getEdgePoint(r, c, dir) {
-                const {x, y} = getCellCenter(r,c);
-                const cellWidth = animationCanvas.width / currentLevelConfig.gridSize;
-                const cellHeight = animationCanvas.height / currentLevelConfig.gridSize;
-                if (dir === 'left') return { x: x - cellWidth / 2, y: y };
-                if (dir === 'right') return { x: x + cellWidth / 2, y: y };
-                if (dir === 'top') return { x: x, y: y - cellHeight / 2 };
-                if (dir === 'bottom') return { x: x, y: y + cellHeight / 2 };
-                return {x,y}; // Should not happen
             }
 
             function drawBall(x, y, color = '#2563eb') { // blue-600
@@ -668,6 +684,24 @@
                 }
             }
 
+            if (segments.length === 0) {
+                // This should not happen anymore since we handle no_start in checkSolution
+                showMessage('失敗: パスセグメントが見つかりません。', 'error');
+                stopAnimation();
+                return;
+            }
+
+            function getEdgePoint(r, c, dir) {
+                const {x, y} = getCellCenter(r,c);
+                const cellWidth = animationCanvas.width / currentLevelConfig.gridSize;
+                const cellHeight = animationCanvas.height / currentLevelConfig.gridSize;
+                if (dir === 'left') return { x: x - cellWidth / 2, y: y };
+                if (dir === 'right') return { x: x + cellWidth / 2, y: y };
+                if (dir === 'top') return { x: x, y: y - cellHeight / 2 };
+                if (dir === 'bottom') return { x: x, y: y + cellHeight / 2 };
+                return {x,y}; // Should not happen
+            }
+
 
             function animationLoop() {
                 if (!isAnimating) return;
@@ -688,7 +722,8 @@
                     startPt = getCellCenter(segment.r, segment.c);
                     const nextCellR = segment.r + dr[segment.exitDir];
                     const nextCellC = segment.c + dc[segment.exitDir];
-                    endPt = getCellCenter(nextCellR, nextCellC); // Target is center of next piece's cell
+                    const entryToNext = oppositeDir[segment.exitDir];
+                    endPt = getEdgePoint(nextCellR, nextCellC, entryToNext);
                 } else { // Regular piece or end
                     const cellCenter = getCellCenter(segment.r, segment.c);
                     startPt = getEdgePoint(segment.r, segment.c, segment.entryDir); // Entry from edge
@@ -770,61 +805,59 @@
 
 
                     currentSegmentIndex++;
-                    if (currentSegmentIndex >= segments.length) { // Animation finished
-                        stopAnimation();
+                    if (currentSegmentIndex >= segments.length) { // Animation finished or need to check continuation
+                        // Check if we should continue or end here
                         if (segment.type === 'end') {
+                            // Successfully reached the end
+                            stopAnimation();
                             if (allJewelsCollected(collectedJewelsAnim, currentLevelConfig.jewels)) {
                                 showMessage('成功！おめでとうございます！', 'success');
                             } else {
                                 showMessage('失敗: ゴールに到達しましたが、全ての宝石を集めていません。', 'error');
                             }
-                        } else { // Ended not on a goal tile (e.g. path was shorter than expected or error in pre-check)
-                            showMessage('失敗: 経路がゴールに到達しませんでした。', 'error');
+                            return;
+                        } else {
+                            // Path ended but not at goal - check what's next
+                            const nextR = segment.r + dr[segment.exitDir];
+                            const nextC = segment.c + dc[segment.exitDir];
+                            
+                            // Move ball to the expected next position and show error
+                            const nextCenter = getCellCenter(nextR, nextC);
+                            drawBall(nextCenter.x, nextCenter.y);
+                            
+                            if (nextR < 0 || nextR >= currentLevelConfig.gridSize || nextC < 0 || nextC >= currentLevelConfig.gridSize) {
+                                drawErrorEffect(nextCenter.x, nextCenter.y, 'broken');
+                                stopAnimation();
+                                showMessage('失敗: 道が盤面の外に出ました。', 'error');
+                            } else if (fixedSetup(nextR, nextC).type === 'obstacle') {
+                                drawErrorEffect(nextCenter.x, nextCenter.y, 'obstacle');
+                                stopAnimation();
+                                showMessage('失敗: 道が障害物にぶつかりました。', 'error');
+                            } else if (fixedSetup(nextR, nextC).type === 'end') {
+                                // This shouldn't happen if segments were built correctly, but handle gracefully
+                                stopAnimation();
+                                if (allJewelsCollected(collectedJewelsAnim, currentLevelConfig.jewels)) {
+                                    showMessage('成功！おめでとうございます！', 'success');
+                                } else {
+                                    showMessage('失敗: ゴールに到達しましたが、全ての宝石を集めていません。', 'error');
+                                }
+                            } else if (!playerGrid[nextR][nextC]) {
+                                drawErrorEffect(nextCenter.x, nextCenter.y, 'broken');
+                                stopAnimation();
+                                showMessage('失敗: 道が途中で途切れています。', 'error');
+                            } else {
+                                // There is a piece but connection is wrong
+                                drawErrorEffect(nextCenter.x, nextCenter.y, 'dead_end');
+                                stopAnimation();
+                                showMessage('失敗: ピースが正しく接続されていません。', 'error');
+                            }
+                            return;
                         }
-                        return;
                     }
                 }
                 animationFrameId = requestAnimationFrame(animationLoop);
             }
             
-            // Handle pre-determined errors from static check
-            if (initialStatus === 'obstacle' || initialStatus === 'broken' || initialStatus === 'dead_end') {
-                let errorR = segments.length > 0 ? segments[segments.length-1].r : startPos.r;
-                let errorC = segments.length > 0 ? segments[segments.length-1].c : startPos.c;
-                let errorBallPos = getCellCenter(errorR, errorC);
-                 if (segments.length > 0) { // Try to place ball at end of last valid drawn segment
-                    const lastSeg = segments[segments.length-1];
-                    let lastStartPt, lastMidPt, lastEndPt;
-                    if (lastSeg.type === 'start') {
-                        lastStartPt = getCellCenter(lastSeg.r, lastSeg.c);
-                        const nextR = lastSeg.r + dr[lastSeg.exitDir];
-                        const nextC = lastSeg.c + dc[lastSeg.exitDir];
-                        lastEndPt = getCellCenter(nextR, nextC);
-                    } else {
-                        const cellCenter = getCellCenter(lastSeg.r, lastSeg.c);
-                        lastStartPt = getEdgePoint(lastSeg.r, lastSeg.c, lastSeg.entryDir);
-                        if (lastSeg.pieceDef && (lastSeg.pieceDef.svgPath.includes('L') || lastSeg.pieceDef.svgPath.includes('A'))) {
-                            lastMidPt = cellCenter;
-                            lastEndPt = getEdgePoint(lastSeg.r, lastSeg.c, lastSeg.exitDir);
-                        } else if (lastSeg.type === 'end') {
-                            lastEndPt = cellCenter;
-                        } else if (lastSeg.pieceDef) {
-                            lastEndPt = getEdgePoint(lastSeg.r, lastSeg.c, lastSeg.exitDir);
-                        }
-                        errorBallPos = lastEndPt || cellCenter; // Position at the end of the segment where error occurred
-                    }
-                 }
-
-                drawBall(errorBallPos.x, errorBallPos.y);
-                drawErrorEffect(errorBallPos.x, errorBallPos.y, initialStatus);
-                stopAnimation();
-                if(initialStatus === 'obstacle') showMessage('失敗: 道が障害物にぶつかりました。', 'error');
-                else if(initialStatus === 'broken') showMessage('失敗: 道が途中で途切れています。', 'error');
-                else if(initialStatus === 'dead_end') showMessage('失敗: ピースが正しく接続されていません。', 'error');
-                return;
-            }
-
-
             animationFrameId = requestAnimationFrame(animationLoop);
         }
 
@@ -836,6 +869,7 @@
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
             }
+            // Clear any lingering canvas content after a brief delay to show final error state
         }
 
         function allJewelsCollected(collectedSet, targetArray) {
