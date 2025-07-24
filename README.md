@@ -13,6 +13,10 @@ A 3D game where players learn basic programming concepts by arranging command bl
 - Multiple difficulty levels
 - Command blocks for movement and direction
 - Score system based on efficiency
+- Touch-friendly interface with improved mobile usability
+- Responsive layout that adapts to screen orientation
+- Enhanced drag-and-drop functionality for touchscreens
+- Thick scrollbars for better touch navigation
 
 ### 2. Jigsaw Puzzle
 
@@ -50,7 +54,7 @@ https://hamham.dev/education/index.html
 
 These games were developed with the assistance of AI tools, primarily:
 - Gemini Pro 2.5
-- Claude Sonnet 3.7
+- Claude Sonnet 4
 
 ---
 
@@ -69,6 +73,10 @@ These games were developed with the assistance of AI tools, primarily:
 - 複数の難易度レベル
 - 移動と方向転換のための命令ブロック
 - 効率性に基づくスコアシステム
+- タッチ操作に最適化されたインターフェース
+- 画面の向きに応じて自動調整されるレスポンシブレイアウト
+- タッチスクリーン向けの改良されたドラッグアンドドロップ機能
+- タッチ操作しやすい太いスクロールバー
 
 ### 2. ジグソーパズル
 
@@ -106,4 +114,4 @@ https://hamham.dev/education/index.html
 
 これらのゲームは主に以下のAIツールの支援を受けて開発されました：
 - Gemini Pro 2.5
-- Claude Sonnet 3.7
+- Claude Sonnet 4
