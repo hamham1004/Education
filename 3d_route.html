@@ -39,25 +39,121 @@
         }
         #startButton:hover { background-color: #059669; }
 
-        #mainContainer { display: none; flex-direction: column; flex-grow: 1; gap: 1rem; }
-        #view3dContainer { position: relative; background-color: #bfdbfe; border-radius: 0.5rem; overflow: hidden; min-height: 300px; flex-grow: 1; }
+        #mainContainer { display: none; flex-direction: column; height: 100vh; gap: 1rem; overflow: hidden; }
+        #view3dContainer { position: relative; background-color: #bfdbfe; border-radius: 0.5rem; overflow: hidden; min-height: 300px; flex: 1; }
         #view3dCanvas { display: block; width: 100%; height: 100%; }
-        #controlsContainer { background-color: white; border-radius: 0.5rem; padding: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
-        @media (min-width: 768px) {
-            #mainContainer { flex-direction: row; }
-            #view3dContainer { width: 60%; }
-            #controlsContainer { width: 40%; max-height: calc(100vh - 120px); overflow-y: auto; }
+        #controlsContainer { 
+            background-color: white; 
+            border-radius: 0.5rem; 
+            padding: 1rem; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); 
+            max-height: 400px; 
+            overflow-y: auto; 
+            scrollbar-width: thick; 
+            scrollbar-color: #64748b #ffffff; 
+        }
+        #controlsContainer::-webkit-scrollbar {
+            width: 16px;
+        }
+        #controlsContainer::-webkit-scrollbar-track {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        #controlsContainer::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 8px;
+            border: 2px solid #ffffff;
+            min-height: 40px;
+        }
+        #controlsContainer::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        #controlsContainer::-webkit-scrollbar-thumb:active {
+            background: #334155;
+        }
+        
+        /* 横長レイアウト（動的に適用） */
+        .landscape-layout #mainContainer { flex-direction: row; }
+        .landscape-layout #view3dContainer { width: 60%; }
+        .landscape-layout #controlsContainer { 
+            width: 40%; 
+            max-height: calc(100vh - 120px); 
+            overflow-y: auto; 
+            scrollbar-width: thick; 
+            scrollbar-color: #64748b #ffffff; 
+        }
+        .landscape-layout #controlsContainer::-webkit-scrollbar {
+            width: 16px;
+        }
+        .landscape-layout #controlsContainer::-webkit-scrollbar-track {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+        }
+        .landscape-layout #controlsContainer::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 8px;
+            border: 2px solid #ffffff;
+            min-height: 40px;
+        }
+        .landscape-layout #controlsContainer::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .landscape-layout #controlsContainer::-webkit-scrollbar-thumb:active {
+            background: #334155;
+        }
+        
+        /* 縦長レイアウト（デフォルト） */
+        .portrait-layout #mainContainer { flex-direction: column; }
+        .portrait-layout #view3dContainer { width: 100%; }
+        .portrait-layout #controlsContainer { 
+            width: 100%; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            scrollbar-width: thick; 
+            scrollbar-color: #64748b #ffffff; 
         }
         .command-block { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
         .command-block:active { cursor: grabbing; }
-        .sequence-area { min-height: 100px; border: 2px dashed #cbd5e1; background-color: #f1f5f9; border-radius: 0.5rem; padding: 0.75rem; space-y: 0.5rem; }
+        .sequence-area { 
+            min-height: 100px; 
+            max-height: 300px; 
+            overflow-y: auto; 
+            border: 2px dashed #cbd5e1; 
+            background-color: #f1f5f9; 
+            border-radius: 0.5rem; 
+            padding: 0.75rem; 
+            scrollbar-width: thick; 
+            scrollbar-color: #64748b #f1f5f9; 
+        }
+        .sequence-area::-webkit-scrollbar {
+            width: 16px;
+        }
+        .sequence-area::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .sequence-area::-webkit-scrollbar-thumb {
+            background: #64748b;
+            border-radius: 8px;
+            border: 2px solid #f1f5f9;
+            min-height: 40px;
+        }
+        .sequence-area::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .sequence-area::-webkit-scrollbar-thumb:active {
+            background: #334155;
+        }
         .drag-placeholder { background-color: #e0f2fe; border: 2px dashed #7dd3fc; opacity: 0.7; height: 40px; margin: 4px 0; border-radius: 0.25rem; }
         .dragging { opacity: 0.5; transform: scale(1.05); }
         .touch-clone { position: fixed; pointer-events: none; z-index: 1000; opacity: 0.8; transform: scale(1.05); font-weight: 600; padding: 0.5rem 1rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); transition: none; }
         .message-box { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 1001; display: none; font-size: 1rem; }
         .message-success { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
         .message-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .command-block-instance { cursor: default; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .command-block-instance { cursor: default; width: 75%; text-align: left; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
         .command-block-instance span { cursor: pointer; }
 
         .camera-controls-container { position: absolute; bottom: 1rem; display: flex; gap: 0.5rem; z-index: 10; }
@@ -93,6 +189,7 @@
             <button id="difficultyEasy" class="difficulty-button selected" data-difficulty="easy">やさしい</button>
             <button id="difficultyNormal" class="difficulty-button" data-difficulty="normal">ふつう</button>
             <button id="difficultyHard" class="difficulty-button" data-difficulty="hard">むずかしい</button>
+            <button id="difficultyVeryHard" class="difficulty-button" data-difficulty="veryhard">すごくむずかしい</button>
         </div>
         <button id="startButton">ゲームスタート</button>
     </div>
@@ -173,16 +270,18 @@
         const SCREEN_SHAKE_DURATION = 300;
         const FADE_DURATION = 300;
         const MAX_SCORE = 100;
-        const PROGRAM_RUN_PENALTY = 5;
-        const ACTION_PENALTY = 1;
-        const WALL_HIT_PENALTY = 2;
+        const PROGRAM_RUN_PENALTY = 10; // プログラム実行回数のペナルティ
+        const EXTRA_STEP_PENALTY = 2;   // 余分な手数のペナルティ
+        const WALL_HIT_PENALTY = 5;     // 壁にぶつかった時のペナルティ
         const MOVE_DELAY_MS = 500; // コマンド実行間の遅延時間（ミリ秒）
 
         const MAP_DATA = {
             easy: {
                 gridSize: 5, startPos: { x: 0, y: 0 }, startDir: -90,
                 goalPos: { x: 4, y: 4 },
-                walls: [ { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 } ]
+                walls: [ { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 3, y: 2 }, { x: 3, y: 3 } ],
+                minSteps: 8, // 最短ルートの手数
+                minCommands: 1 // 最小のプログラム実行回数
             },
             normal: {
                 gridSize: 7, startPos: { x: 0, y: 3 }, startDir: -90,
@@ -191,7 +290,9 @@
                     { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 5 },
                     { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 3, y: 2 }, { x: 3, y: 4 }, { x: 3, y: 5 }, { x: 3, y: 6 },
                     { x: 5, y: 1 }, { x: 5, y: 2 }, { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 5 }
-                ]
+                ],
+                minSteps: 18, // 最短ルートの手数
+                minCommands: 1 // 最小のプログラム実行回数
             },
             hard: {
                 gridSize: 9, startPos: { x: 1, y: 1 }, startDir: 0,
@@ -202,7 +303,27 @@
                     { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 },
                     { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 6, y: 6 },
                     { x: 1, y: 7 }, { x: 3, y: 7 }, { x: 5, y: 7 }
-                ]
+                ],
+                minSteps: 16, // 最短ルートの手数
+                minCommands: 1 // 最小のプログラム実行回数
+            },
+            veryhard: {
+                gridSize: 11, startPos: { x: 0, y: 5 }, startDir: 0,
+                goalPos: { x: 10, y: 5 },
+                walls: [
+                    // 複雑な迷路の壁（解ける設計）
+                    { x: 1, y: 2 }, { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 6 }, { x: 1, y: 7 }, { x: 1, y: 8 },
+                    { x: 2, y: 0 }, { x: 2, y: 1 }, { x: 2, y: 9 }, { x: 2, y: 10 },
+                    { x: 3, y: 3 }, { x: 3, y: 7 }, { x: 3, y: 8 },
+                    { x: 4, y: 1 }, { x: 4, y: 4 }, { x: 4, y: 6 }, { x: 4, y: 9 },
+                    { x: 5, y: 0 }, { x: 5, y: 2 }, { x: 5, y: 5 }, { x: 5, y: 8 }, { x: 5, y: 10 },
+                    { x: 6, y: 1 }, { x: 6, y: 4 }, { x: 6, y: 6 }, { x: 6, y: 9 },
+                    { x: 7, y: 3 }, { x: 7, y: 7 }, { x: 7, y: 8 },
+                    { x: 8, y: 0 }, { x: 8, y: 1 }, { x: 8, y: 10 },
+                    { x: 9, y: 2 }, { x: 9, y: 3 }, { x: 9, y: 4 }, { x: 9, y: 5 }, { x: 9, y: 6 }, { x: 9, y: 7 }, { x: 9, y: 8 }
+                ],
+                minSteps: 26, // 最短ルートの手数
+                minCommands: 1 // 最小のプログラム実行回数
             }
         };
         let currentMapData = MAP_DATA.easy;
@@ -212,7 +333,8 @@
         const difficultyButtons = [
             document.getElementById('difficultyEasy'),
             document.getElementById('difficultyNormal'),
-            document.getElementById('difficultyHard')
+            document.getElementById('difficultyHard'),
+            document.getElementById('difficultyVeryHard')
         ];
         const startButton = document.getElementById('startButton');
         const mainContainer = document.getElementById('mainContainer');
@@ -258,6 +380,7 @@
         let totalActionCount = 0;
         let gameScore = null;
         let goalReachedThisSession = false;
+        let wallHitCount = 0; // 壁にぶつかった回数を記録
 
         // --- Drag and Drop State ---
         let draggedItem = null, touchClone = null, placeholder = null;
@@ -280,6 +403,63 @@
             programExecutionCountDisplay.textContent = programExecutionCount;
             actionExecutionCountDisplay.textContent = totalActionCount;
             scoreDisplay.textContent = gameScore === null ? "---" : gameScore;
+        }
+
+        function calculateScore() {
+            // 既に計算済みでスコアが設定されている場合はそのまま返す
+            if (goalReachedThisSession && gameScore !== null) return gameScore;
+            
+            const minSteps = currentMapData.minSteps;
+            const minCommands = currentMapData.minCommands;
+            
+            let score = MAX_SCORE;
+            
+            // プログラム実行回数のペナルティ（最小実行回数を超えた分）
+            const extraPrograms = Math.max(0, programExecutionCount - minCommands);
+            score -= extraPrograms * PROGRAM_RUN_PENALTY;
+            
+            // 余分な手数のペナルティ（最短手数を超えた分）
+            const extraSteps = Math.max(0, totalActionCount - minSteps);
+            score -= extraSteps * EXTRA_STEP_PENALTY;
+            
+            // 壁にぶつかったペナルティ
+            score -= wallHitCount * WALL_HIT_PENALTY;
+            
+            // スコアが負の値にならないようにする
+            return Math.max(0, score);
+        }
+
+        function initializeCommandPalette() {
+            commandPalette.innerHTML = '';
+            
+            // 前進コマンド
+            const forwardBtn = document.createElement('button');
+            forwardBtn.className = 'command-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow mb-2 mr-2';
+            forwardBtn.innerHTML = '🔼 まえにすすむ';
+            forwardBtn.dataset.command = 'forward';
+            forwardBtn.draggable = true;
+            commandPalette.appendChild(forwardBtn);
+            
+            // 左回転コマンド
+            const leftBtn = document.createElement('button');
+            leftBtn.className = 'command-block bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow mb-2 mr-2';
+            leftBtn.innerHTML = '◀️ ひだりをむく';
+            leftBtn.dataset.command = 'turnLeft';
+            leftBtn.draggable = true;
+            commandPalette.appendChild(leftBtn);
+            
+            // 右回転コマンド
+            const rightBtn = document.createElement('button');
+            rightBtn.className = 'command-block bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow mb-2 mr-2';
+            rightBtn.innerHTML = '▶️ みぎをむく';
+            rightBtn.dataset.command = 'turnRight';
+            rightBtn.draggable = true;
+            commandPalette.appendChild(rightBtn);
+        }
+
+        function initializeButtons() {
+            runButton.innerHTML = '🚀 プログラムじっこう';
+            resetButton.innerHTML = '🔄 リセット';
         }
 
         function shakeScreen() {
@@ -394,6 +574,9 @@
             }
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             animate();
+            
+            // 初期レイアウトの設定
+            updateLayoutBasedOnAspectRatio();
         }
 
         function createPlayerModel() {
@@ -515,6 +698,7 @@
                 totalActionCount = 0;
                 gameScore = null;
                 goalReachedThisSession = false;
+                wallHitCount = 0;
                 updateStatsDisplay();
             }
         }
@@ -564,6 +748,26 @@
             camera.aspect = width / height;
             camera.updateProjectionMatrix();
             renderer.setSize(width, height);
+            
+            // レイアウトの更新
+            updateLayoutBasedOnAspectRatio();
+        }
+
+        function updateLayoutBasedOnAspectRatio() {
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const aspectRatio = windowWidth / windowHeight;
+            
+            // アスペクト比が1.2以上なら横長、未満なら縦長とする
+            if (aspectRatio >= 1.2) {
+                // 横長レイアウト（めいれいエリアを右側に）
+                document.body.classList.add('landscape-layout');
+                document.body.classList.remove('portrait-layout');
+            } else {
+                // 縦長レイアウト（めいれいエリアを下側に）
+                document.body.classList.add('portrait-layout');
+                document.body.classList.remove('landscape-layout');
+            }
         }
 
         // --- Game Logic ---
@@ -577,6 +781,7 @@
             sequenceArea.querySelectorAll('.ring-2').forEach(el => el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500'));
             // プログラムをクリア
             sequenceArea.innerHTML = '';
+            wallHitCount = 0; // 壁にぶつかった回数もリセット
             showMessage("スタートにもどりました", 'success', 3000);
         }
 
@@ -617,7 +822,13 @@
                 const element = commandElements[currentActionInProgram];
                 const command = element.dataset.command;
                 element.classList.add('ring-2', 'ring-offset-2', 'ring-red-500');
-                totalActionCount++; updateStatsDisplay();
+                
+                // 前進のみアクション数をカウント（回転はスコアに影響しない）
+                if (command === 'forward') {
+                    totalActionCount++;
+                    updateStatsDisplay();
+                }
+                
                 let actionSuccessful = true; let fellIntoAbyss = false;
 
                 switch (command) {
@@ -669,29 +880,9 @@
                     showMessage("カベにぶつかった！", 'error');
                     shakeScreen();
                     if (!goalReachedThisSession) {
-                        gameScore = Math.max(0, (gameScore === null ? MAX_SCORE : gameScore) - WALL_HIT_PENALTY - ACTION_PENALTY);
-                        updateStatsDisplay();
+                        // 壁にぶつかった回数を記録
+                        wallHitCount++;
                     }
-                    
-                    // プレイヤーをスタート位置に戻す
-                    resetPlayerState(false); updateCameraTarget();
-                    
-                    // コマンドのハイライトをすべて削除
-                    sequenceArea.querySelectorAll('.ring-2').forEach(el => {
-                        el.classList.remove('ring-2', 'ring-offset-2', 'ring-red-500');
-                    });
-                    
-                    // 実行状態をリセット
-                    isRunning = false;
-                    runButton.disabled = false; resetButton.disabled = false;
-                    runButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    resetButton.classList.remove('opacity-50', 'cursor-not-allowed');
-                    
-                    // メッセージを表示
-                    setTimeout(() => {
-                        showMessage("カベにぶつかった！スタート位置に戻りました", 'error', 4000);
-                    }, 100);
-                    return;
                 }
                 currentActionInProgram++;
                 if (actionSuccessful || command !== 'forward') { await new Promise(resolve => setTimeout(resolve, MOVE_DELAY_MS)); }
@@ -791,12 +982,21 @@
             if (distanceToGoal < CELL_WIDTH * 0.6) {
                 if (!goalReachedThisSession) {
                     goalReachedThisSession = true;
-                    gameScore = Math.max(0, MAX_SCORE - (programExecutionCount * PROGRAM_RUN_PENALTY) - (totalActionCount * ACTION_PENALTY));
+                    gameScore = calculateScore();
                     updateStatsDisplay();
                 }
                 
                 // ゴールメッセージを表示
-                showMessage(`ゴールしました！スコアは${gameScore}点です 🎉`, 'success', 5000);
+                let message = `ゴールしました！スコアは${gameScore}点です 🎉`;
+                
+                // パーフェクトスコアの場合は特別メッセージ
+                if (gameScore === MAX_SCORE) {
+                    message = `🎉 パーフェクト！！最短ルート&最小命令でクリア！スコア：${gameScore}点 🎉`;
+                } else if (gameScore >= MAX_SCORE * 0.8) {
+                    message = `👏 すばらしい！スコア：${gameScore}点 👏`;
+                }
+                
+                showMessage(message, 'success', 5000);
                 
                 // ゴールしたら5秒待ってからタイトル画面に戻る
                 await new Promise(resolve => setTimeout(resolve, 5000));
@@ -861,7 +1061,7 @@
                 previousCameraState.lookAt.copy(cameraTargetLookAt);
                 previousCameraState.azimuth = cameraAzimuthAngle;
                 previousCameraState.distance = currentCameraDistance;
-                // cameraAzimuthAngle = 0; // Keep current azimuth for rotation around map center
+                cameraAzimuthAngle = 0; // Reset azimuth for top view to center the view
                 topViewCameraY = currentMapData.gridSize * CELL_WIDTH * 1.5; // Initial reasonable height
                 updateCameraTarget();
                 updateViewModeButtons();
@@ -879,40 +1079,154 @@
 
         // --- Drag and Drop Logic ---
         function handleDragStart(e) {
-            const targetBlock = e.target.closest('.command-block');
-            if (!targetBlock || targetBlock.closest('.command-block-instance')) return;
-            isDragging = true; draggedItem = targetBlock;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', draggedItem.dataset.command);
-            setTimeout(() => draggedItem.classList.add('dragging'), 0);
-            createPlaceholder();
+            const targetBlock = e.target.closest('.command-block, .command-block-instance');
+            if (!targetBlock) return;
+            
+            // プログラムエリア内のブロックの場合は、元のブロックを一時的に隠す
+            if (targetBlock.classList.contains('command-block-instance')) {
+                isDragging = true; 
+                draggedItem = targetBlock;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', draggedItem.dataset.command);
+                e.dataTransfer.setData('application/x-block-type', 'instance'); // ブロックタイプを記録
+                setTimeout(() => {
+                    draggedItem.classList.add('dragging');
+                    draggedItem.style.opacity = '0.3'; // ドラッグ中は半透明にする
+                }, 0);
+                createPlaceholder();
+            } else if (targetBlock.classList.contains('command-block') && !targetBlock.closest('.command-block-instance')) {
+                // コマンドパレットからのドラッグ（元のブロックは半透明にしない）
+                isDragging = true; 
+                draggedItem = targetBlock;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', draggedItem.dataset.command);
+                e.dataTransfer.setData('application/x-block-type', 'palette'); // ブロックタイプを記録
+                setTimeout(() => draggedItem.classList.add('dragging'), 0);
+                createPlaceholder();
+            }
         }
         function handleTouchStart(e) {
-            const targetBlock = e.target.closest('.command-block');
-            if (!targetBlock || targetBlock.closest('.command-block-instance')) return;
-            isDragging = true; draggedItem = targetBlock;
-            const touch = e.changedTouches[0]; const rect = draggedItem.getBoundingClientRect();
-            touchClone = draggedItem.cloneNode(true);
-            touchClone.className = draggedItem.className + ' touch-clone';
-            touchClone.style.width = `${rect.width}px`; touchClone.style.height = `${rect.height}px`;
-            dragOffsetX = touch.clientX - rect.left; dragOffsetY = touch.clientY - rect.top;
-            touchClone.style.left = `${touch.clientX - dragOffsetX}px`;
-            touchClone.style.top = `${touch.clientY - dragOffsetY}px`;
-            document.body.appendChild(touchClone); createPlaceholder();
-            if (e.cancelable) e.preventDefault();
+            // ×ボタンがタッチされた場合は、ドラッグ操作を開始しない
+            if (e.target.innerHTML === '×' || e.target.textContent === '×') {
+                return; // ×ボタンの場合は何もしない
+            }
+            
+            const targetBlock = e.target.closest('.command-block, .command-block-instance');
+            if (!targetBlock) return;
+            
+            // プログラムエリア内のブロックまたはコマンドパレットのブロック
+            if (targetBlock.classList.contains('command-block-instance') || 
+                (targetBlock.classList.contains('command-block') && !targetBlock.closest('.command-block-instance'))) {
+                isDragging = true; 
+                draggedItem = targetBlock;
+                const touch = e.changedTouches[0]; 
+                const rect = draggedItem.getBoundingClientRect();
+                touchClone = draggedItem.cloneNode(true);
+                touchClone.className = draggedItem.className + ' touch-clone';
+                touchClone.style.width = `${rect.width}px`; 
+                touchClone.style.height = `${rect.height}px`;
+                dragOffsetX = touch.clientX - rect.left; 
+                dragOffsetY = touch.clientY - rect.top;
+                touchClone.style.left = `${touch.clientX - dragOffsetX}px`;
+                touchClone.style.top = `${touch.clientY - dragOffsetY}px`;
+                document.body.appendChild(touchClone); 
+                
+                // プログラムエリア内のブロックの場合は元のブロックを半透明にする
+                if (targetBlock.classList.contains('command-block-instance')) {
+                    draggedItem.style.opacity = '0.3';
+                }
+                
+                createPlaceholder();
+                if (e.cancelable) e.preventDefault();
+            }
         }
-        function handleDragEnd(e) { if (!isDragging) return; isDragging = false; setTimeout(() => { draggedItem?.classList.remove('dragging'); draggedItem = null; }, 0); placeholder?.remove(); placeholder = null; }
+        function handleDragEnd(e) { 
+            if (!isDragging) return; 
+            isDragging = false; 
+            setTimeout(() => { 
+                if (draggedItem) {
+                    draggedItem.classList.remove('dragging'); 
+                    // すべてのケースで透明度をリセット
+                    draggedItem.style.opacity = ''; // 透明度をリセット
+                    draggedItem = null; 
+                }
+            }, 0); 
+            placeholder?.remove(); 
+            placeholder = null; 
+        }
         function handleTouchEnd(e) {
             if (!isDragging || !draggedItem) return;
+            
+            // ドラッグ中のブロックがDOMから削除されていないかチェック
+            if (!document.body.contains(draggedItem)) {
+                // ブロックが削除されている場合はクリーンアップして終了
+                isDragging = false; 
+                touchClone?.remove(); 
+                placeholder?.remove();
+                touchClone = null; 
+                placeholder = null; 
+                draggedItem = null;
+                return;
+            }
+            
             const touch = e.changedTouches[0];
             const dropTargetElement = document.elementFromPoint(touch.clientX, touch.clientY);
             if (dropTargetElement && (dropTargetElement === sequenceArea || sequenceArea.contains(dropTargetElement))) {
-                const command = draggedItem.dataset.command; addBlockToSequence(command, touch.clientY);
+                const command = draggedItem.dataset.command; 
+                
+                if (draggedItem.classList.contains('command-block-instance')) {
+                    // プログラムエリア内のブロックの移動
+                    moveBlockInSequence(draggedItem, touch.clientY);
+                    // 透明度のリセットはmoveBlockInSequence関数内で行われるため、ここでは不要
+                } else {
+                    // コマンドパレットからの新しいブロック追加
+                    addBlockToSequence(command, touch.clientY);
+                    // コマンドパレットのブロックは透明度をリセットしない
+                }
+            } else {
+                // プログラムエリア外にドロップされた場合でも透明度をリセット
+                if (draggedItem) {
+                    draggedItem.style.opacity = '';
+                }
             }
-            isDragging = false; touchClone?.remove(); placeholder?.remove();
-            touchClone = null; placeholder = null; draggedItem = null;
+            
+            // 全てのケースで、ドラッグされたブロックの透明度を確実にリセット
+            if (draggedItem && draggedItem.classList.contains('command-block-instance')) {
+                draggedItem.style.opacity = '';
+            }
+            
+            isDragging = false; 
+            touchClone?.remove(); 
+            placeholder?.remove();
+            
+            touchClone = null; 
+            placeholder = null; 
+            draggedItem = null;
         }
-        function handleDragOver(e) { e.preventDefault(); if (!isDragging) return; e.dataTransfer.dropEffect = 'move'; const sequenceRect = sequenceArea.getBoundingClientRect(); if (e.clientX >= sequenceRect.left && e.clientX <= sequenceRect.right && e.clientY >= sequenceRect.top && e.clientY <= sequenceRect.bottom) { updatePlaceholderPosition(e.clientY); } else { placeholder?.remove(); } }
+        function handleDragOver(e) { 
+            e.preventDefault(); 
+            if (!isDragging) return; 
+            e.dataTransfer.dropEffect = 'move'; 
+            const sequenceRect = sequenceArea.getBoundingClientRect(); 
+            if (e.clientX >= sequenceRect.left && e.clientX <= sequenceRect.right && 
+                e.clientY >= sequenceRect.top && e.clientY <= sequenceRect.bottom) { 
+                updatePlaceholderPosition(e.clientY); 
+                
+                // 自動スクロール機能
+                const scrollThreshold = 30;
+                const scrollSpeed = 5;
+                const relativeY = e.clientY - sequenceRect.top;
+                
+                if (relativeY < scrollThreshold && sequenceArea.scrollTop > 0) {
+                    sequenceArea.scrollTop -= scrollSpeed;
+                } else if (relativeY > sequenceArea.clientHeight - scrollThreshold && 
+                          sequenceArea.scrollTop < sequenceArea.scrollHeight - sequenceArea.clientHeight) {
+                    sequenceArea.scrollTop += scrollSpeed;
+                }
+            } else { 
+                placeholder?.remove(); 
+            } 
+        }
         function handleTouchMove(e) {
             if (!isDragging || !touchClone) return;
             if (e.cancelable) e.preventDefault();
@@ -927,11 +1241,146 @@
             }
         }
         function handleDragLeave(e) { if (!sequenceArea.contains(e.relatedTarget) && placeholder) { placeholder.remove(); } }
-        function handleDrop(e) { e.preventDefault(); if (!isDragging) return; const sequenceRect = sequenceArea.getBoundingClientRect(); if (e.clientX >= sequenceRect.left && e.clientX <= sequenceRect.right && e.clientY >= sequenceRect.top && e.clientY <= sequenceRect.bottom) { const command = e.dataTransfer.getData('text/plain'); addBlockToSequence(command, e.clientY); } }
+        function handleDrop(e) { 
+            e.preventDefault(); 
+            if (!isDragging) return; 
+            const sequenceRect = sequenceArea.getBoundingClientRect(); 
+            if (e.clientX >= sequenceRect.left && e.clientX <= sequenceRect.right && 
+                e.clientY >= sequenceRect.top && e.clientY <= sequenceRect.bottom) { 
+                const command = e.dataTransfer.getData('text/plain'); 
+                const blockType = e.dataTransfer.getData('application/x-block-type');
+                
+                if (blockType === 'instance') {
+                    // プログラムエリア内のブロックの移動
+                    moveBlockInSequence(draggedItem, e.clientY);
+                    // 透明度のリセットはmoveBlockInSequence関数内で行われるため、ここでは不要
+                } else {
+                    // コマンドパレットからの新しいブロック追加
+                    addBlockToSequence(command, e.clientY); 
+                    // コマンドパレットのブロックは透明度をリセットしない
+                }
+            } else {
+                // プログラムエリア外にドロップされた場合のみ透明度をリセット
+                if (draggedItem && draggedItem.classList.contains('command-block-instance')) {
+                    draggedItem.style.opacity = '';
+                }
+            }
+        }
         function createPlaceholder() { if (!placeholder) { placeholder = document.createElement('div'); placeholder.classList.add('drag-placeholder'); } return placeholder; }
-        function getDropTarget(yCoord) { const sequenceRect = sequenceArea.getBoundingClientRect(); const relativeY = yCoord - sequenceRect.top; let closest = { element: null, offset: Number.POSITIVE_INFINITY }; sequenceArea.querySelectorAll('.command-block-instance').forEach(block => { const blockRect = block.getBoundingClientRect(); const blockCenterY = blockRect.top + blockRect.height / 2 - sequenceRect.top; const offset = Math.abs(relativeY - blockCenterY); if (offset < closest.offset) { closest = { element: block, offset: offset, isAfter: relativeY > blockCenterY }; } }); if (closest.element === null || closest.offset > 50) { return { target: null, insertBefore: relativeY <= sequenceArea.clientHeight / 2 }; } return { target: closest.element, insertBefore: !closest.isAfter }; }
-        function updatePlaceholderPosition(yCoord) { createPlaceholder(); const { target, insertBefore } = getDropTarget(yCoord); if (target) { sequenceArea.insertBefore(placeholder, insertBefore ? target : target.nextSibling); } else { sequenceArea.insertBefore(placeholder, insertBefore ? sequenceArea.firstChild : null); } placeholder.style.display = 'block'; }
-        function addBlockToSequence(command, yCoord) { if (!command) return; const blockInstance = document.createElement('button'); blockInstance.dataset.command = command; const originalBlock = commandPalette.querySelector(`[data-command="${command}"]`); if (originalBlock) { blockInstance.className = originalBlock.className; blockInstance.innerHTML = originalBlock.innerHTML; blockInstance.classList.remove('command-block', 'hover:bg-blue-600', 'hover:bg-green-600', 'hover:bg-yellow-600'); blockInstance.classList.add('command-block-instance'); blockInstance.draggable = false; const removeBtn = document.createElement('span'); removeBtn.innerHTML = '&times;'; removeBtn.classList.add('text-lg', 'text-white', 'font-bold', 'ml-2', 'opacity-60', 'hover:opacity-100', 'cursor-pointer', 'px-1'); removeBtn.onclick = (e) => { e.stopPropagation(); blockInstance.remove(); }; blockInstance.appendChild(removeBtn); } else { blockInstance.textContent = command; blockInstance.classList.add('command-block-instance', 'bg-gray-400', 'text-white', 'p-2', 'rounded', 'mb-2'); } const { target, insertBefore } = getDropTarget(yCoord); if (target) { sequenceArea.insertBefore(blockInstance, insertBefore ? target : target.nextSibling); } else { sequenceArea.insertBefore(blockInstance, insertBefore ? sequenceArea.firstChild : null); } }
+        function getDropTarget(yCoord) { 
+            const sequenceRect = sequenceArea.getBoundingClientRect(); 
+            const relativeY = yCoord - sequenceRect.top + sequenceArea.scrollTop; 
+            let closest = { element: null, offset: Number.POSITIVE_INFINITY }; 
+            sequenceArea.querySelectorAll('.command-block-instance').forEach(block => { 
+                const blockRect = block.getBoundingClientRect(); 
+                const blockCenterY = blockRect.top + blockRect.height / 2 - sequenceRect.top + sequenceArea.scrollTop; 
+                const offset = Math.abs(relativeY - blockCenterY); 
+                if (offset < closest.offset) { 
+                    closest = { element: block, offset: offset, isAfter: relativeY > blockCenterY }; 
+                } 
+            }); 
+            if (closest.element === null || closest.offset > 50) { 
+                return { target: null, insertBefore: relativeY <= sequenceArea.clientHeight / 2 }; 
+            } 
+            return { target: closest.element, insertBefore: !closest.isAfter }; 
+        }
+        function updatePlaceholderPosition(yCoord) { 
+            createPlaceholder(); 
+            const { target, insertBefore } = getDropTarget(yCoord); 
+            if (target) { 
+                sequenceArea.insertBefore(placeholder, insertBefore ? target : target.nextSibling); 
+            } else { 
+                sequenceArea.insertBefore(placeholder, insertBefore ? sequenceArea.firstChild : null); 
+            } 
+            placeholder.style.display = 'block'; 
+        }
+        
+        function moveBlockInSequence(blockToMove, yCoord) {
+            if (!blockToMove || !sequenceArea.contains(blockToMove)) return;
+            const { target, insertBefore } = getDropTarget(yCoord);
+            
+            // 同じ位置にドロップされた場合でも透明度をリセット
+            if (target === blockToMove) {
+                blockToMove.style.opacity = '';
+                return;
+            }
+            
+            // ブロックを新しい位置に移動
+            if (target) {
+                if (insertBefore) {
+                    sequenceArea.insertBefore(blockToMove, target);
+                } else {
+                    sequenceArea.insertBefore(blockToMove, target.nextSibling);
+                }
+            } else {
+                if (insertBefore) {
+                    sequenceArea.insertBefore(blockToMove, sequenceArea.firstChild);
+                } else {
+                    sequenceArea.appendChild(blockToMove);
+                }
+            }
+            // ドロップ直後に必ず不透明に戻す
+            blockToMove.style.opacity = '';
+        }
+        function addBlockToSequence(command, yCoord) { 
+            if (!command) return; 
+            const blockInstance = document.createElement('button'); 
+            blockInstance.dataset.command = command; 
+            const originalBlock = commandPalette.querySelector(`[data-command="${command}"]`); 
+            if (originalBlock) { 
+                blockInstance.className = originalBlock.className; 
+                blockInstance.innerHTML = originalBlock.innerHTML; 
+                blockInstance.classList.remove('command-block', 'hover:bg-blue-600', 'hover:bg-green-600', 'hover:bg-yellow-600', 'dragging'); 
+                blockInstance.classList.add('command-block-instance'); 
+                blockInstance.draggable = true; // ドラッグを有効にする
+                const removeBtn = document.createElement('span'); 
+                removeBtn.innerHTML = '&times;'; 
+                removeBtn.classList.add('text-lg', 'text-white', 'font-bold', 'ml-2', 'opacity-60', 'hover:opacity-100', 'cursor-pointer', 'px-1'); 
+                
+                // クリックイベント（マウス操作用）
+                removeBtn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    blockInstance.remove(); 
+                }; 
+                
+                // タッチイベント（タッチ操作用）
+                removeBtn.ontouchend = (e) => { 
+                    e.stopPropagation(); 
+                    e.preventDefault(); 
+                    
+                    // ドラッグ操作をキャンセル
+                    if (isDragging) {
+                        isDragging = false;
+                        if (touchClone) {
+                            touchClone.remove();
+                            touchClone = null;
+                        }
+                        if (placeholder) {
+                            placeholder.remove();
+                            placeholder = null;
+                        }
+                        draggedItem = null;
+                    }
+                    
+                    blockInstance.remove(); 
+                }; 
+                
+                blockInstance.appendChild(removeBtn); 
+            } else { 
+                blockInstance.textContent = command; 
+                blockInstance.classList.add('command-block-instance', 'bg-gray-400', 'text-white', 'p-2', 'rounded', 'mb-2'); 
+                blockInstance.draggable = true; // ドラッグを有効にする
+            } 
+            const { target, insertBefore } = getDropTarget(yCoord); 
+            if (target) { 
+                sequenceArea.insertBefore(blockInstance, insertBefore ? target : target.nextSibling); 
+            } else { 
+                sequenceArea.insertBefore(blockInstance, insertBefore ? sequenceArea.firstChild : null); 
+            } 
+            // 追加直後に必ず透明度をリセットし、draggingクラスも削除
+            blockInstance.style.opacity = '1';
+            blockInstance.classList.remove('dragging');
+        }
 
         // --- Event Listeners ---
         runButton.addEventListener('click', runCommands);
@@ -951,11 +1400,13 @@
             showMessage("タイトル画面に戻りました", 'success', 3000);
         });
         commandPalette.addEventListener('dragstart', handleDragStart);
+        sequenceArea.addEventListener('dragstart', handleDragStart); // プログラムエリアのドラッグも有効にする
         document.addEventListener('dragend', handleDragEnd);
         sequenceArea.addEventListener('dragover', handleDragOver);
         sequenceArea.addEventListener('dragleave', handleDragLeave);
         sequenceArea.addEventListener('drop', handleDrop);
         commandPalette.addEventListener('touchstart', handleTouchStart, { passive: false });
+        sequenceArea.addEventListener('touchstart', handleTouchStart, { passive: false }); // プログラムエリアのタッチも有効にする
         document.addEventListener('touchmove', handleTouchMove, { passive: false });
         document.addEventListener('touchend', handleTouchEnd);
         document.addEventListener('touchcancel', handleTouchEnd);
@@ -984,6 +1435,25 @@
                         if (animationFrameId) cancelAnimationFrame(animationFrameId);
                         setupScene();
                     }
+                    
+                    // ゲームスタート時は上から見た画面を表示
+                    isTopViewActive = true;
+                    cameraAzimuthAngle = 0;
+                    topViewCameraY = currentMapData.gridSize * CELL_WIDTH * 1.5;
+                    updateCameraTarget();
+                    updateViewModeButtons();
+                    
+                    // 3秒後に斜めから見た画面に切り替え
+                    setTimeout(() => {
+                        isTopViewActive = false;
+                        cameraAzimuthAngle = 0;
+                        currentCameraDistance = CAMERA_DEFAULT_DISTANCE;
+                        updateCameraTarget();
+                        updateViewModeButtons();
+                    }, 3000);
+                    
+                    initializeCommandPalette();
+                    initializeButtons();
                     updateStatsDisplay();
                 } else {
                     // Fallback if dimensions are still not ready (should be rare)
@@ -992,11 +1462,34 @@
                             if (animationFrameId) cancelAnimationFrame(animationFrameId);
                             setupScene();
                         }
+                        
+                        // ゲームスタート時は上から見た画面を表示
+                        isTopViewActive = true;
+                        cameraAzimuthAngle = 0;
+                        topViewCameraY = currentMapData.gridSize * CELL_WIDTH * 1.5;
+                        updateCameraTarget();
+                        updateViewModeButtons();
+                        
+                        // 3秒後に斜めから見た画面に切り替え
+                        setTimeout(() => {
+                            isTopViewActive = false;
+                            cameraAzimuthAngle = 0;
+                            currentCameraDistance = CAMERA_DEFAULT_DISTANCE;
+                            updateCameraTarget();
+                            updateViewModeButtons();
+                        }, 3000);
+                        
+                        initializeCommandPalette();
+                        initializeButtons();
                         updateStatsDisplay();
                     }, 100);
                 }
             });
         });
+        
+        // ページ読み込み時に初期レイアウトを設定
+        document.addEventListener('DOMContentLoaded', updateLayoutBasedOnAspectRatio);
+        window.addEventListener('load', updateLayoutBasedOnAspectRatio);
     </script>
 </body>
 </html>
