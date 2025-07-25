@@ -177,8 +177,7 @@
         </div>
 
         <div id="controls" class="mt-6 flex justify-center items-center space-x-3 sm:space-x-4">
-            <button id="check-button" class="bg-blue-500 hover:bg-blue-600 text-white border-blue-700">チェック</button>
-            <button id="reset-button" class="bg-amber-500 hover:bg-amber-600 text-white border-amber-700">リセット</button>
+            <button id="check-button" class="bg-blue-500 hover:bg-blue-600 text-white border-blue-700">スタート</button>
             <button id="back-to-title-button" class="bg-gray-500 hover:bg-gray-600 text-white border-gray-700">タイトルへ</button>
         </div>
 
@@ -234,7 +233,6 @@
         const ctx = animationCanvas.getContext('2d');
         const messageArea = document.getElementById('message-area');
         const checkButton = document.getElementById('check-button');
-        const resetButton = document.getElementById('reset-button');
         const eraserButton = document.getElementById('eraser-button');
         const backToTitleButton = document.getElementById('back-to-title-button');
         const levelDescription = document.getElementById('level-description');
@@ -254,13 +252,14 @@
             });
 
             checkButton.addEventListener('click', () => { if (!isAnimating) checkSolution(); });
-            resetButton.addEventListener('click', () => { if (!isAnimating) loadLevel(currentLevelConfig); });
             eraserButton.addEventListener('click', () => selectPiece('eraser'));
             backToTitleButton.addEventListener('click', () => {
-                if (isAnimating) stopAnimation();
-                gameApp.classList.add('hidden');
-                titleScreen.classList.remove('hidden');
-                messageArea.textContent = '';
+                if (confirm('タイトル画面に戻りますか？\n現在のゲームの進行状況は失われます。')) {
+                    if (isAnimating) stopAnimation();
+                    gameApp.classList.add('hidden');
+                    titleScreen.classList.remove('hidden');
+                    messageArea.textContent = '';
+                }
             });
             renderPalette(); // Palette is static, render once
         }
@@ -648,7 +647,6 @@
         function animatePath(segments, initialStatus = 'pending') {
             isAnimating = true;
             checkButton.disabled = true;
-            resetButton.disabled = true;
             let currentSegmentIndex = 0;
             let progressInSegment = 0; // 0 to 1
             const ballRadius = Math.min(animationCanvas.width / currentLevelConfig.gridSize, animationCanvas.height / currentLevelConfig.gridSize) * 0.2; // Ball size relative to cell
@@ -864,7 +862,6 @@
         function stopAnimation() {
             isAnimating = false;
             checkButton.disabled = false;
-            resetButton.disabled = false;
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 animationFrameId = null;
