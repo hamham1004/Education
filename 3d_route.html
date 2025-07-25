@@ -1384,20 +1384,26 @@
 
         // --- Event Listeners ---
         runButton.addEventListener('click', runCommands);
-        resetButton.addEventListener('click', resetGame);
+        resetButton.addEventListener('click', () => {
+            if (confirm('ゲームをリセットしますか？\n現在のプログラムと進行状況がすべて失われます。')) {
+                resetGame();
+            }
+        });
         const titleButton = document.getElementById('titleButton');
         titleButton.addEventListener('click', () => {
             if (isRunning) return; // 実行中は操作できないようにする
             
-            // タイトル画面を表示
-            titleScreen.style.display = 'flex';
-            mainContainer.style.display = 'none';
-            
-            // ゲームをリセット
-            resetPlayerState(true);
-            sequenceArea.innerHTML = '';
-            
-            showMessage("タイトル画面に戻りました", 'success', 3000);
+            if (confirm('タイトル画面に戻りますか？\n現在のプログラムと進行状況がすべて失われます。')) {
+                // タイトル画面を表示
+                titleScreen.style.display = 'flex';
+                mainContainer.style.display = 'none';
+                
+                // ゲームをリセット
+                resetPlayerState(true);
+                sequenceArea.innerHTML = '';
+                
+                showMessage("タイトル画面に戻りました", 'success', 3000);
+            }
         });
         commandPalette.addEventListener('dragstart', handleDragStart);
         sequenceArea.addEventListener('dragstart', handleDragStart); // プログラムエリアのドラッグも有効にする
