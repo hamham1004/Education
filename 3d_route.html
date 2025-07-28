@@ -190,6 +190,8 @@
             <button id="difficultyNormal" class="difficulty-button" data-difficulty="normal">ふつう</button>
             <button id="difficultyHard" class="difficulty-button" data-difficulty="hard">むずかしい</button>
             <button id="difficultyVeryHard" class="difficulty-button" data-difficulty="veryhard">すごくむずかしい</button>
+            <button id="difficultyExpert" class="difficulty-button" data-difficulty="expert">エキスパート</button>
+            <button id="difficultyHardcore" class="difficulty-button" data-difficulty="hardcore">ハードコア</button>
         </div>
         <button id="startButton">ゲームスタート</button>
     </div>
@@ -324,6 +326,49 @@
                 ],
                 minSteps: 26, // 最短ルートの手数
                 minCommands: 1 // 最小のプログラム実行回数
+            },
+            expert: {
+                gridSize: 13, startPos: { x: 0, y: 0 }, startDir: 0,
+                goalPos: { x: 12, y: 12 },
+                walls: [
+                    // エキスパート - より複雑な迷路設計
+                    { x: 1, y: 0 }, { x: 1, y: 1 }, { x: 1, y: 3 }, { x: 1, y: 4 }, { x: 1, y: 6 }, { x: 1, y: 8 }, { x: 1, y: 9 }, { x: 1, y: 11 },
+                    { x: 2, y: 2 }, { x: 2, y: 5 }, { x: 2, y: 10 }, { x: 2, y: 12 },
+                    { x: 3, y: 1 }, { x: 3, y: 3 }, { x: 3, y: 6 }, { x: 3, y: 8 }, { x: 3, y: 11 },
+                    { x: 4, y: 0 }, { x: 4, y: 2 }, { x: 4, y: 4 }, { x: 4, y: 9 }, { x: 4, y: 12 },
+                    { x: 5, y: 1 }, { x: 5, y: 5 }, { x: 5, y: 7 }, { x: 5, y: 10 },
+                    { x: 6, y: 3 }, { x: 6, y: 6 }, { x: 6, y: 8 }, { x: 6, y: 11 },
+                    { x: 7, y: 0 }, { x: 7, y: 2 }, { x: 7, y: 4 }, { x: 7, y: 9 }, { x: 7, y: 12 },
+                    { x: 8, y: 1 }, { x: 8, y: 5 }, { x: 8, y: 7 }, { x: 8, y: 10 },
+                    { x: 9, y: 3 }, { x: 9, y: 6 }, { x: 9, y: 8 }, { x: 9, y: 11 },
+                    { x: 10, y: 0 }, { x: 10, y: 2 }, { x: 10, y: 4 }, { x: 10, y: 9 },
+                    { x: 11, y: 1 }, { x: 11, y: 5 }, { x: 11, y: 7 }, { x: 11, y: 10 }, { x: 11, y: 12 }
+                ],
+                minSteps: 26, // 最短ルートの手数
+                minCommands: 1 // 最小のプログラム実行回数
+            },
+            hardcore: {
+                gridSize: 15, startPos: { x: 0, y: 7 }, startDir: 0,
+                goalPos: { x: 14, y: 7 },
+                walls: [
+                    // ハードコア - 最高難易度の巨大迷路
+                    { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 1, y: 3 }, { x: 1, y: 5 }, { x: 1, y: 6 }, { x: 1, y: 8 }, { x: 1, y: 9 }, { x: 1, y: 11 }, { x: 1, y: 12 }, { x: 1, y: 13 },
+                    { x: 2, y: 0 }, { x: 2, y: 4 }, { x: 2, y: 7 }, { x: 2, y: 10 },
+                    { x: 3, y: 2 }, { x: 3, y: 3 }, { x: 3, y: 5 }, { x: 3, y: 9 }, { x: 3, y: 11 }, { x: 3, y: 12 },
+                    { x: 4, y: 1 }, { x: 4, y: 6 }, { x: 4, y: 8 },
+                    { x: 5, y: 0 }, { x: 5, y: 3 }, { x: 5, y: 4 }, { x: 5, y: 7 }, { x: 5, y: 10 }, { x: 5, y: 11 }, { x: 5, y: 14 },
+                    { x: 6, y: 2 }, { x: 6, y: 5 }, { x: 6, y: 9 }, { x: 6, y: 12 },
+                    { x: 7, y: 6 }, { x: 7, y: 8 }, { x: 7, y: 13 },
+                    { x: 8, y: 0 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 7 }, { x: 8, y: 10 }, { x: 8, y: 11 }, { x: 8, y: 14 },
+                    { x: 9, y: 2 }, { x: 9, y: 5 }, { x: 9, y: 7 }, { x: 9, y: 9 }, { x: 9, y: 12 },
+                    { x: 10, y: 6 }, { x: 10, y: 8 }, { x: 10, y: 13 },
+                    { x: 11, y: 0 }, { x: 11, y: 3 }, { x: 11, y: 4 }, { x: 11, y: 10 }, { x: 11, y: 11 }, { x: 11, y: 14 },
+                    { x: 12, y: 2 }, { x: 12, y: 5 }, { x: 12, y: 7 }, { x: 12, y: 9 }, { x: 12, y: 12 },
+                    { x: 13, y: 1 }, { x: 13, y: 3 }, { x: 13, y: 6 }, { x: 13, y: 8 }, { x: 13, y: 13 },
+                    { x: 14, y: 4 }, { x: 14, y: 10 }
+                ],
+                minSteps: 62, // 最短ルートの手数
+                minCommands: 1 // 最小のプログラム実行回数
             }
         };
         let currentMapData = MAP_DATA.easy;
@@ -334,7 +379,9 @@
             document.getElementById('difficultyEasy'),
             document.getElementById('difficultyNormal'),
             document.getElementById('difficultyHard'),
-            document.getElementById('difficultyVeryHard')
+            document.getElementById('difficultyVeryHard'),
+            document.getElementById('difficultyExpert'),
+            document.getElementById('difficultyHardcore')
         ];
         const startButton = document.getElementById('startButton');
         const mainContainer = document.getElementById('mainContainer');
