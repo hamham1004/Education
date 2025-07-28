@@ -156,6 +156,7 @@
             <button data-difficulty="2" class="difficulty-button bg-orange-500 hover:bg-orange-600 text-white border-orange-700 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">むずかしい</button>
             <button data-difficulty="3" class="difficulty-button bg-red-500 hover:bg-red-600 text-white border-red-700 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">すごくむずかしい</button>
             <button data-difficulty="4" class="difficulty-button bg-purple-600 hover:bg-purple-700 text-white border-purple-800 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">エキスパート</button>
+            <button data-difficulty="5" class="difficulty-button bg-black hover:bg-gray-800 text-white border-gray-900 p-3 sm:p-4 rounded-lg text-lg sm:text-xl">ハードコア</button>
         </div>
     </div>
 
@@ -204,12 +205,13 @@
         const allDirections = ['top', 'right', 'bottom', 'left'];
         const jewelColors = ['red', 'blue', 'yellow', 'green', 'purple'];
 
-        const levels = [ // Mapped to difficulties 0: Easy, 1: Normal, 2: Hard, 3: Very Hard, 4: Expert
+        const levels = [ // Mapped to difficulties 0: Easy, 1: Normal, 2: Hard, 3: Very Hard, 4: Expert, 5: Hardcore
             { id: 'level1', name: '基本の道', gridSize: 4, start: { r: 1, c: 0 }, end: { r: 1, c: 3 }, jewels: [{ r: 1, c: 1 }], obstacles: [{r:0,c:2}, {r:2,c:2}], description: "やさしい: スタートから宝石を通り、ゴールを目指そう！" },
             { id: 'level2', name: 'L字カーブ', gridSize: 4, start: { r: 0, c: 0 }, end: { r: 3, c: 3 }, jewels: [{ r: 1, c: 0 }, {r: 1, c: 2}, {r: 3, c:2}], obstacles: [{r:0,c:1}, {r:2,c:0}, {r:2,c:1}], description: "ふつう: 複数の宝石とカーブを使いこなそう。" },
             { id: 'level3', name: '複雑な経路', gridSize: 5, start: { r: 2, c: 0 }, end: { r: 2, c: 4 }, jewels: [{ r: 0, c: 2 }, { r: 4, c: 2 }], obstacles: [{r:1,c:1}, {r:1,c:3}, {r:3,c:1}, {r:3,c:3}], description: "むずかしい: 障害物を避けながら、全ての宝石を集めよう。" },
             { id: 'level4', name: '回り道', gridSize: 6, start: { r: 0, c: 0 }, end: { r: 5, c: 5 }, jewels: [ { r: 0, c: 3 }, { r: 3, c: 0 }, { r: 3, c: 5 }, { r: 5, c: 2 } ], obstacles: [ { r: 4, c: 1 }, { r: 4, c: 4 }, {r:2, c:2}, {r:2,c:3}, {r:3,c:2}, {r:3,c:3}], description: "すごくむずかしい: 大きな盤面で、計画的に道をつなごう。" },
-            { id: 'level5', name: '迷宮挑戦', gridSize: 7, start: { r: 0, c: 0 }, end: { r: 6, c: 6 }, jewels: [{ r: 0, c: 3 }, { r: 3, c: 0 }, { r: 3, c: 6 }, { r: 6, c: 3 }, { r: 3, c: 3 }], obstacles: [{r:1,c:1}, {r:1,c:2}, {r:2,c:1}, {r:1,c:4}, {r:1,c:5}, {r:2,c:5}, {r:4,c:1}, {r:5,c:1}, {r:5,c:2}, {r:4,c:4}, {r:4,c:5}, {r:5,c:4}], description: "エキスパート: 7×7の大きな盤面で5つの宝石を集める究極の挑戦！" }
+            { id: 'level5', name: '迷宮挑戦', gridSize: 7, start: { r: 0, c: 0 }, end: { r: 6, c: 6 }, jewels: [{ r: 0, c: 3 }, { r: 3, c: 0 }, { r: 3, c: 6 }, { r: 6, c: 3 }, { r: 3, c: 3 }], obstacles: [{r:1,c:1}, {r:1,c:2}, {r:2,c:1}, {r:1,c:4}, {r:1,c:5}, {r:2,c:5}, {r:4,c:1}, {r:5,c:1}, {r:5,c:2}, {r:4,c:4}, {r:4,c:5}, {r:5,c:4}], description: "エキスパート: 7×7の大きな盤面で5つの宝石を集める究極の挑戦！" },
+            { id: 'level6', name: 'ハードコア迷宮', gridSize: 8, start: { r: 0, c: 0 }, end: { r: 7, c: 7 }, jewels: [{ r: 1, c: 2 }, { r: 2, c: 5 }, { r: 4, c: 1 }, { r: 5, c: 6 }, { r: 6, c: 3 }], obstacles: [{r:1,c:1}, {r:1,c:4}, {r:1,c:6}, {r:2,c:2}, {r:2,c:7}, {r:3,c:3}, {r:3,c:5}, {r:4,c:0}, {r:4,c:6}, {r:5,c:3}, {r:6,c:0}, {r:6,c:2}, {r:6,c:6}, {r:7,c:4}], description: "ハードコア: 8×8の巨大な盤面で5つの宝石を集める究極の挑戦！完璧な戦略と忍耐が必要！" }
         ];
 
         // --- Game State ---
